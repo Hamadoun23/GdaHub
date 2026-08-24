@@ -1,0 +1,25 @@
+# Secrets et configuration locale
+.env
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Django
+staticfiles/
+media/
+*.sqlite3
+
+# Node / Next
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Outils
+.DS_Store
+.idea/
+.vscode/
