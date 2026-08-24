@@ -9,6 +9,7 @@ signe par identity, et ne stocke a cote de ses donnees que des identifiants
 numeriques, jamais de cle etrangere vers un autre service.
 """
 
+import os
 from pathlib import Path
 
 from gdahub_common.reglages import *  # noqa: F403
@@ -18,11 +19,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 GDAHUB_APPLICATION = "daily"
 
-INSTALLED_APPS = [*INSTALLED_APPS, "chantiers"]
+# Le domaine ne produit pas de document validable, mais le socle apporte
+# aussi le modele Horodate et la numerotation : il reste installe.
+INSTALLED_APPS = [*INSTALLED_APPS, "gdahub_common.validation", "chantiers"]
 
 MEDIA_ROOT = BASE_DIR / "media"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Les services que celui-ci a le droit d'appeler, via gdahub_common.client.
 # Tant que la liste est vide, il est autonome — c'est l'objectif.
-GDAHUB_SERVICES: dict[str, str] = {}
+# Les chantiers sont autonomes : ils ne consultent l'annuaire qu'au moment
+# d'affecter un agent a un projet, et le front s'en charge.
+GDAHUB_SERVICES: dict[str, str] = {
+    "organisation": os.environ.get(
+        "GDAHUB_SERVICE_ORGANISATION", "http://organisation:8000"
+    ),
+}
