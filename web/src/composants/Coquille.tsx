@@ -14,6 +14,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { grouper } from "@/lib/groupes";
 import { useSession } from "@/lib/session";
 
 export function Coquille({ children }: { children: React.ReactNode }) {
@@ -43,23 +44,38 @@ export function Coquille({ children }: { children: React.ReactNode }) {
             GDA <span className="text-marque">Hub</span>
           </Link>
 
+          {/* Les sections sont separees par un filet plutot que par un titre :
+              une barre horizontale n'a pas la place d'afficher « Board » et
+              « Applications metier », mais la coupure suffit a faire lire les
+              deux blocs comme distincts. */}
           <nav className="flex flex-1 flex-wrap items-center gap-1 text-sm">
-            {profil.applications.map((application) => {
-              const actif = chemin === application.chemin;
-              return (
-                <Link
-                  key={application.code}
-                  href={application.chemin || "/tableau-de-bord"}
-                  className={`rounded-md px-3 py-1.5 transition ${
-                    actif
-                      ? "bg-ardoise-100 font-medium dark:bg-ardoise-700"
-                      : "text-ardoise-500 hover:bg-ardoise-100 dark:hover:bg-ardoise-700"
-                  }`}
-                >
-                  {application.nom}
-                </Link>
-              );
-            })}
+            {grouper(profil.applications).map((section, rang) => (
+              <div key={section.titre} className="flex flex-wrap items-center gap-1">
+                {rang > 0 ? (
+                  <span
+                    aria-hidden
+                    className="mx-2 h-4 w-px bg-ardoise-200 dark:bg-ardoise-700"
+                  />
+                ) : null}
+                {section.applications.map((application) => {
+                  const actif = chemin === application.chemin;
+                  return (
+                    <Link
+                      key={application.code}
+                      href={application.chemin || "/tableau-de-bord"}
+                      title={section.titre || undefined}
+                      className={`rounded-md px-3 py-1.5 transition ${
+                        actif
+                          ? "bg-ardoise-100 font-medium dark:bg-ardoise-700"
+                          : "text-ardoise-500 hover:bg-ardoise-100 dark:hover:bg-ardoise-700"
+                      }`}
+                    >
+                      {application.nom}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
           <div className="flex items-center gap-3 text-sm">

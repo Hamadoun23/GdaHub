@@ -58,8 +58,9 @@ class AdminUtilisateur(UserAdmin):
 
 @admin.register(Application)
 class AdminApplication(admin.ModelAdmin):
-    list_display = ["code", "nom", "chemin", "ordre", "active"]
+    list_display = ["code", "nom", "groupe", "chemin", "ordre", "active"]
     list_editable = ["ordre", "active"]
+    list_filter = ["groupe", "active"]
     search_fields = ["code", "nom"]
 
 

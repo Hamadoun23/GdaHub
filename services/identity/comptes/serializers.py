@@ -22,6 +22,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
             "code",
             "nom",
             "description",
+            "groupe",
             "chemin",
             "prefixe_api",
             "roles_disponibles",

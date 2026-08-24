@@ -9,6 +9,11 @@
 # les tables d'un autre, meme par accident. C'est la contrainte qui rend le
 # decoupage reel plutot que declaratif.
 #
+# Neuf services Django, en deux blocs :
+#   Board             organisation, rh, finance, direction — le siege
+#   Metier            bdm, orange, daily, planning
+# plus identity, qui signe les jetons, et que personne ne remplace.
+#
 # Le code est monte en volume : une modification est prise en compte sans
 # reconstruire l'image, cote Django comme cote Next.
 #
@@ -21,9 +26,6 @@ name: gdahub
 x-postgres: &postgres
   image: postgres:17-alpine
   restart: unless-stopped
-  environment:
-    POSTGRES_USER: gdahub
-    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
   healthcheck:
     test: ["CMD-SHELL", "pg_isready -U gdahub"]
     interval: 5s
@@ -35,7 +37,7 @@ x-service-django: &service-django
   environment: &env-django
     DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-developpement-local-non-secret}
     DJANGO_DEBUG: "True"
-    DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,gateway,identity,financerh,bdm,orange,daily,planning
+    DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,gateway,identity,organisation,rh,finance,direction,bdm,orange,daily,planning
     DJANGO_TIME_ZONE: Africa/Bamako
     GDAHUB_JWKS_URL: http://identity:8000/.well-known/jwks.json
     GDAHUB_JETON_EMETTEUR: gdahub-identity
@@ -54,15 +56,45 @@ services:
     ports: ["127.0.0.1:5441:5432"]
     volumes: ["donnees-identity:/var/lib/postgresql/data"]
 
-  db-financerh:
+  db-organisation:
     <<: *postgres
-    container_name: gdahub-db-financerh
+    container_name: gdahub-db-organisation
     environment:
       POSTGRES_USER: gdahub
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
-      POSTGRES_DB: financerh
+      POSTGRES_DB: organisation
     ports: ["127.0.0.1:5446:5432"]
-    volumes: ["donnees-financerh:/var/lib/postgresql/data"]
+    volumes: ["donnees-organisation:/var/lib/postgresql/data"]
+
+  db-rh:
+    <<: *postgres
+    container_name: gdahub-db-rh
+    environment:
+      POSTGRES_USER: gdahub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
+      POSTGRES_DB: rh
+    ports: ["127.0.0.1:5447:5432"]
+    volumes: ["donnees-rh:/var/lib/postgresql/data"]
+
+  db-finance:
+    <<: *postgres
+    container_name: gdahub-db-finance
+    environment:
+      POSTGRES_USER: gdahub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
+      POSTGRES_DB: finance
+    ports: ["127.0.0.1:5448:5432"]
+    volumes: ["donnees-finance:/var/lib/postgresql/data"]
+
+  db-direction:
+    <<: *postgres
+    container_name: gdahub-db-direction
+    environment:
+      POSTGRES_USER: gdahub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
+      POSTGRES_DB: direction
+    ports: ["127.0.0.1:5449:5432"]
+    volumes: ["donnees-direction:/var/lib/postgresql/data"]
 
   db-bdm:
     <<: *postgres
@@ -122,8 +154,11 @@ services:
       DATABASE_URL: postgres://gdahub:${POSTGRES_PASSWORD:-gdahub-local}@db-identity:5432/identity
       GDAHUB_JWKS_URL: http://localhost:8000/.well-known/jwks.json
       GDAHUB_DOSSIER_CLES: /cles
-      GDAHUB_ADMIN_IDENTIFIANT: ${GDAHUB_ADMIN_IDENTIFIANT:-admin}
+      GDAHUB_ADMIN_IDENTIFIANT: ${GDAHUB_ADMIN_IDENTIFIANT:-hcisse@gdamali.net}
       GDAHUB_ADMIN_MOT_DE_PASSE: ${GDAHUB_ADMIN_MOT_DE_PASSE:-admin}
+      GDAHUB_ADMIN_NOM: ${GDAHUB_ADMIN_NOM:-Cisse}
+      GDAHUB_ADMIN_PRENOM: ${GDAHUB_ADMIN_PRENOM:-Hamadoun}
+      GDAHUB_ADMIN_FONCTION: ${GDAHUB_ADMIN_FONCTION:-Responsable IT et developpement}
       DJANGO_MOTS_DE_PASSE_SIMPLES: ${DJANGO_MOTS_DE_PASSE_SIMPLES:-True}
     volumes:
       - ./services/identity:/app
@@ -133,29 +168,90 @@ services:
       - cles:/cles
     ports: ["127.0.0.1:8101:8000"]
 
-  # --- Services metier ----------------------------------------------------
-  # Le seul domaine deja en production : sa reprise part du schema reel de
-  # rh.gdamali.net, pas d'une base vide.
-  financerh:
+  # --- Board : le siege ---------------------------------------------------
+  # Organisation vient en premier : elle possede l'annuaire dont tous les
+  # autres services ont besoin.
+  organisation:
     <<: *service-django
     build:
       context: .
-      dockerfile: services/financerh/Dockerfile
+      dockerfile: services/organisation/Dockerfile
       target: developpement
-    container_name: gdahub-financerh
+    container_name: gdahub-organisation
     depends_on:
-      db-financerh: {condition: service_healthy}
+      db-organisation: {condition: service_healthy}
       identity: {condition: service_started}
     environment:
       <<: *env-django
-      GDAHUB_APPLICATION: financerh
-      DATABASE_URL: postgres://gdahub:${POSTGRES_PASSWORD:-gdahub-local}@db-financerh:5432/financerh
+      GDAHUB_APPLICATION: organisation
+      DATABASE_URL: postgres://gdahub:${POSTGRES_PASSWORD:-gdahub-local}@db-organisation:5432/organisation
     volumes:
-      - ./services/financerh:/app
+      - ./services/organisation:/app
       - ./libs/gdahub_common:/libs/gdahub_common
-      - media-financerh:/app/media
+      - media-organisation:/app/media
     ports: ["127.0.0.1:8106:8000"]
 
+  rh:
+    <<: *service-django
+    build:
+      context: .
+      dockerfile: services/rh/Dockerfile
+      target: developpement
+    container_name: gdahub-rh
+    depends_on:
+      db-rh: {condition: service_healthy}
+      identity: {condition: service_started}
+    environment:
+      <<: *env-django
+      GDAHUB_APPLICATION: rh
+      DATABASE_URL: postgres://gdahub:${POSTGRES_PASSWORD:-gdahub-local}@db-rh:5432/rh
+    volumes:
+      - ./services/rh:/app
+      - ./libs/gdahub_common:/libs/gdahub_common
+      - media-rh:/app/media
+    ports: ["127.0.0.1:8107:8000"]
+
+  finance:
+    <<: *service-django
+    build:
+      context: .
+      dockerfile: services/finance/Dockerfile
+      target: developpement
+    container_name: gdahub-finance
+    depends_on:
+      db-finance: {condition: service_healthy}
+      identity: {condition: service_started}
+    environment:
+      <<: *env-django
+      GDAHUB_APPLICATION: finance
+      DATABASE_URL: postgres://gdahub:${POSTGRES_PASSWORD:-gdahub-local}@db-finance:5432/finance
+    volumes:
+      - ./services/finance:/app
+      - ./libs/gdahub_common:/libs/gdahub_common
+      - media-finance:/app/media
+    ports: ["127.0.0.1:8108:8000"]
+
+  direction:
+    <<: *service-django
+    build:
+      context: .
+      dockerfile: services/direction/Dockerfile
+      target: developpement
+    container_name: gdahub-direction
+    depends_on:
+      db-direction: {condition: service_healthy}
+      identity: {condition: service_started}
+    environment:
+      <<: *env-django
+      GDAHUB_APPLICATION: direction
+      DATABASE_URL: postgres://gdahub:${POSTGRES_PASSWORD:-gdahub-local}@db-direction:5432/direction
+    volumes:
+      - ./services/direction:/app
+      - ./libs/gdahub_common:/libs/gdahub_common
+      - media-direction:/app/media
+    ports: ["127.0.0.1:8109:8000"]
+
+  # --- Les quatre applications metier --------------------------------------
   bdm:
     <<: *service-django
     build:
@@ -259,19 +355,25 @@ services:
     image: nginx:1.29-alpine
     container_name: gdahub-gateway
     restart: unless-stopped
-    depends_on: [identity, financerh, bdm, orange, daily, planning, web]
+    depends_on: [identity, organisation, rh, finance, direction, bdm, orange, daily, planning, web]
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports: ["127.0.0.1:8080:80"]
 
 volumes:
   donnees-identity:
-  donnees-financerh:
+  donnees-organisation:
+  donnees-rh:
+  donnees-finance:
+  donnees-direction:
   donnees-bdm:
   donnees-orange:
   donnees-daily:
   donnees-planning:
-  media-financerh:
+  media-organisation:
+  media-rh:
+  media-finance:
+  media-direction:
   media-bdm:
   media-orange:
   media-daily:

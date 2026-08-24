@@ -122,10 +122,18 @@ class Application(models.Model):
     """
 
     code = models.SlugField(
-        "Code", max_length=32, unique=True, help_text="bdm, orange, daily, planning..."
+        "Code", max_length=32, unique=True, help_text="rh, finance, bdm, daily..."
     )
     nom = models.CharField("Nom affiche", max_length=100)
     description = models.CharField("Description", max_length=255, blank=True)
+    groupe = models.CharField(
+        "Groupe",
+        max_length=60,
+        blank=True,
+        help_text="Intitule de la section du menu : « Board », "
+        "« Applications metier »... Le libelle sert directement d'en-tete, "
+        "pour qu'ajouter une section ne demande pas de toucher au front.",
+    )
     chemin = models.CharField(
         "Chemin dans le shell",
         max_length=100,

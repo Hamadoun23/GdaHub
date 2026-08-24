@@ -76,6 +76,8 @@ export type Application = {
   code: string;
   nom: string;
   description: string;
+  /** Intitule de la section : « Board », « Applications metier »... */
+  groupe: string;
   chemin: string;
   prefixe_api: string;
   couleur: string;

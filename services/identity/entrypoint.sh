@@ -10,6 +10,10 @@ echo "[identity] cles de signature"
 python manage.py generer_cles
 
 echo "[identity] migrations"
+# `makemigrations` figure ici tant que le schema bouge a chaque seance.
+# A retirer et a remplacer par des migrations versionnees avant toute
+# mise en service : une image de production ne genere pas son schema.
+python manage.py makemigrations comptes --noinput
 python manage.py migrate --noinput
 
 echo "[identity] donnees de depart"

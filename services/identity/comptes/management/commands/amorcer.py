@@ -1,12 +1,21 @@
-"""Jeu de donnees minimal : le catalogue des applications et un administrateur.
+"""Jeu de donnees minimal : le catalogue des applications et le super admin.
 
 La commande est idempotente : elle se relance a chaque demarrage sans ecraser
 ce qui a ete modifie depuis. Les roles disponibles, eux, sont realignes sur ce
 fichier — c'est ici que le catalogue fait autorite.
 
-Les listes de roles reprennent celles des applications d'origine, pour que la
-reprise des comptes existants soit une correspondance ligne a ligne et non une
-reinterpretation.
+L'ERP se lit en trois blocs, dans cet ordre :
+
+1. **Board** — le siege. L'organigramme, puis les ressources humaines, la
+   finance et la direction. Il vient en premier parce qu'il detient ce dont
+   toutes les autres applications ont besoin : qui travaille ici, dans quel
+   departement, sous quelle autorite.
+2. **Applications metier** — les quatre activites du groupe.
+3. **Administration** — le hub lui-meme : comptes, habilitations, journal.
+
+Les listes de roles reprennent celles des applications d'origine chaque fois
+qu'elles existaient, pour que la reprise des comptes soit une correspondance
+ligne a ligne et non une reinterpretation.
 """
 
 from django.conf import settings
@@ -15,46 +24,90 @@ from django.db import transaction
 
 from comptes.models import Application, Habilitation, Utilisateur
 
+BOARD = "Board"
+METIER = "Applications metier"
+ADMINISTRATION = "Administration"
+
 APPLICATIONS = [
+    # --- Board : le siege ------------------------------------------------
     {
-        "code": "hub",
-        "nom": "GDA Hub",
-        "description": "Comptes, habilitations et journal des connexions.",
-        "chemin": "/administration",
-        "prefixe_api": "/api/identity",
+        "code": "organisation",
+        "role_admin": "admin",
+        "nom": "Organisation",
+        "groupe": BOARD,
+        "description": "Organigramme : agents, departements, rattachements.",
+        "chemin": "/organisation",
+        "prefixe_api": "/api/organisation",
         "couleur": "#0f766e",
-        "ordre": 0,
+        "ordre": 10,
+        # « gestionnaire » edite l'organigramme, « lecture » ne voit que
+        # l'annuaire. L'encadrement n'est pas un role : il se deduit du
+        # rattachement d'un agent a un responsable, et c'est ce lien qui
+        # designe le premier valideur de chaque demande.
         "roles_disponibles": [
-            {"code": "admin", "libelle": "Administrateur du hub"},
-            {"code": "lecture", "libelle": "Consultation de l'annuaire"},
+            {"code": "admin", "libelle": "Administrateur"},
+            {"code": "gestionnaire", "libelle": "Gestionnaire de l'organigramme"},
+            {"code": "lecture", "libelle": "Annuaire seul"},
         ],
     },
     {
-        "code": "financerh",
-        "nom": "RH & Finance",
-        "description": "Conges, permissions, retards et validation des depenses.",
-        "chemin": "/rh-finance",
-        "prefixe_api": "/api/financerh",
+        "code": "rh",
+        "role_admin": "gestionnaire",
+        "nom": "Ressources humaines",
+        "groupe": BOARD,
+        "description": "Conges, permissions, retards, presences, formations.",
+        "chemin": "/ressources-humaines",
+        "prefixe_api": "/api/rh",
         "couleur": "#0369a1",
-        "ordre": 5,
-        # Les quatre roles de l'application d'origine, repris a l'identique.
-        # L'encadrement n'en est pas un : il se lit du rattachement d'un agent
-        # a un responsable, et c'est ce lien qui designe le premier valideur.
+        "ordre": 11,
         "roles_disponibles": [
-            {"code": "salarie", "libelle": "Salarie"},
-            {"code": "rh", "libelle": "Ressources humaines"},
-            {"code": "finance", "libelle": "Finance"},
+            {"code": "agent", "libelle": "Agent (ses propres demandes)"},
+            {"code": "gestionnaire", "libelle": "Ressources humaines"},
             {"code": "direction", "libelle": "Direction"},
         ],
     },
     {
+        "code": "finance",
+        "role_admin": "gestionnaire",
+        "nom": "Finance",
+        "groupe": BOARD,
+        "description": "Demandes d'engagement, depenses, caisse, budgets.",
+        "chemin": "/finance",
+        "prefixe_api": "/api/finance",
+        "couleur": "#047857",
+        "ordre": 12,
+        "roles_disponibles": [
+            {"code": "agent", "libelle": "Agent (ses propres demandes)"},
+            {"code": "gestionnaire", "libelle": "Service financier"},
+            {"code": "direction", "libelle": "Direction"},
+        ],
+    },
+    {
+        "code": "direction",
+        "role_admin": "admin",
+        "nom": "Direction",
+        "groupe": BOARD,
+        "description": "Regles de validation, decisions, tableau de bord consolide.",
+        "chemin": "/direction",
+        "prefixe_api": "/api/direction",
+        "couleur": "#4338ca",
+        "ordre": 13,
+        "roles_disponibles": [
+            {"code": "admin", "libelle": "Parametre les circuits"},
+            {"code": "membre", "libelle": "Comite de direction"},
+        ],
+    },
+    # --- Les quatre applications metier ----------------------------------
+    {
         "code": "bdm",
+        "role_admin": "admin",
         "nom": "Campagnes",
+        "groupe": METIER,
         "description": "Campagnes de cartes bancaires : ventes, enrolements, primes.",
         "chemin": "/campagnes",
         "prefixe_api": "/api/bdm",
         "couleur": "#1d4ed8",
-        "ordre": 10,
+        "ordre": 20,
         "roles_disponibles": [
             {"code": "admin", "libelle": "Administrateur"},
             {"code": "direction", "libelle": "Direction"},
@@ -64,12 +117,14 @@ APPLICATIONS = [
     },
     {
         "code": "orange",
+        "role_admin": "admin",
         "nom": "Jus d'Orange",
+        "groupe": METIER,
         "description": "Recolte, fabrication, entrepot et distribution.",
         "chemin": "/jus-orange",
         "prefixe_api": "/api/orange",
         "couleur": "#ea580c",
-        "ordre": 20,
+        "ordre": 21,
         "roles_disponibles": [
             {"code": "admin", "libelle": "Administrateur"},
             {"code": "direction", "libelle": "Direction"},
@@ -80,12 +135,14 @@ APPLICATIONS = [
     },
     {
         "code": "daily",
+        "role_admin": "admin",
         "nom": "Chantiers",
+        "groupe": METIER,
         "description": "Suivi de chantier : avancement, photos, rapport journalier.",
         "chemin": "/chantiers",
         "prefixe_api": "/api/daily",
         "couleur": "#b45309",
-        "ordre": 30,
+        "ordre": 22,
         "roles_disponibles": [
             {"code": "admin", "libelle": "Administrateur"},
             {"code": "chef_chantier", "libelle": "Chef de chantier"},
@@ -96,23 +153,41 @@ APPLICATIONS = [
     },
     {
         "code": "planning",
+        "role_admin": "admin",
         "nom": "Planning",
+        "groupe": METIER,
         "description": "Publications, tournages et rapports clients.",
         "chemin": "/planning",
         "prefixe_api": "/api/planning",
         "couleur": "#7c3aed",
-        "ordre": 40,
+        "ordre": 23,
         "roles_disponibles": [
             {"code": "admin", "libelle": "Administrateur"},
             {"code": "team", "libelle": "Equipe"},
             {"code": "client", "libelle": "Client (ses donnees seulement)"},
         ],
     },
+    # --- Le hub lui-meme --------------------------------------------------
+    {
+        "code": "hub",
+        "role_admin": "admin",
+        "nom": "Administration du hub",
+        "groupe": ADMINISTRATION,
+        "description": "Comptes, habilitations et journal des connexions.",
+        "chemin": "/administration",
+        "prefixe_api": "/api/identity",
+        "couleur": "#334155",
+        "ordre": 90,
+        "roles_disponibles": [
+            {"code": "admin", "libelle": "Administrateur du hub"},
+            {"code": "lecture", "libelle": "Consultation de l'annuaire"},
+        ],
+    },
 ]
 
 
 class Command(BaseCommand):
-    help = "Cree le catalogue des applications et le compte administrateur."
+    help = "Cree le catalogue des applications et le compte super administrateur."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -122,23 +197,40 @@ class Command(BaseCommand):
                 defaults={
                     champ: valeur
                     for champ, valeur in donnees.items()
-                    if champ != "code"
+                    if champ not in {"code", "role_admin"}
                 },
             )
             etat = "creee" if cree else "mise a jour"
-            self.stdout.write(f"Application {application.code} {etat}.")
+            self.stdout.write(f"  {application.groupe:20} {application.code:14} {etat}")
 
+        self.stdout.write("")
+        self._super_admin()
+
+    def _super_admin(self):
+        """Cree le compte du responsable IT, habilite sur tout.
+
+        Ce n'est pas un compte de service anonyme : c'est une personne
+        identifiee, qui administre l'ERP, les serveurs et les domaines. Le
+        creer nommement plutot que sous un « admin » generique rend le journal
+        des connexions lisible des le premier jour.
+        """
         identifiant = settings.GDAHUB_ADMIN_IDENTIFIANT.strip().lower()
         administrateur = Utilisateur.objects.filter(identifiant=identifiant).first()
+
         if administrateur is None:
             administrateur = Utilisateur.objects.create_superuser(
                 identifiant=identifiant,
                 mot_de_passe=settings.GDAHUB_ADMIN_MOT_DE_PASSE,
-                nom="Administrateur",
-                fonction="Administration GDA Hub",
+                nom=settings.GDAHUB_ADMIN_NOM,
+                prenom=settings.GDAHUB_ADMIN_PRENOM,
+                email=identifiant if "@" in identifiant else "",
+                fonction=settings.GDAHUB_ADMIN_FONCTION,
             )
             self.stdout.write(
-                self.style.SUCCESS(f"Compte administrateur cree : {identifiant}")
+                self.style.SUCCESS(
+                    f"Super administrateur cree : {administrateur.nom_complet} "
+                    f"({identifiant})"
+                )
             )
             self.stdout.write(
                 self.style.WARNING(
@@ -147,14 +239,35 @@ class Command(BaseCommand):
                 )
             )
         else:
-            self.stdout.write(f"Compte administrateur deja present : {identifiant}")
+            self.stdout.write(
+                f"Super administrateur deja present : {administrateur.nom_complet} "
+                f"({identifiant})"
+            )
+            # Le drapeau peut avoir ete perdu lors d'une reprise de donnees.
+            if not administrateur.is_superuser:
+                administrateur.is_superuser = True
+                administrateur.is_staff = True
+                administrateur.save(update_fields=["is_superuser", "is_staff"])
+                self.stdout.write(self.style.WARNING("  drapeau superadmin retabli"))
 
-        # L'administrateur est habilite partout : c'est le compte de secours
-        # tant que les habilitations reelles ne sont pas saisies.
+        # Habilite sur toutes les applications. Le drapeau superadmin suffirait
+        # a lui ouvrir les portes, mais le tableau de bord ne liste que les
+        # applications habilitees : sans ces lignes, il se connecterait sur un
+        # ecran vide.
+        #
+        # Le role accorde est declare par application dans le catalogue :
+        # le premier de la liste n'est pas partout le plus etendu, « rh » et
+        # « finance » commencant par « agent ».
+        roles_admin = {
+            donnees["code"]: donnees["role_admin"] for donnees in APPLICATIONS
+        }
         for application in Application.objects.all():
             Habilitation.objects.update_or_create(
                 utilisateur=administrateur,
                 application=application,
-                defaults={"roles": ["admin"], "active": True},
+                defaults={
+                    "roles": [roles_admin.get(application.code, "admin")],
+                    "active": True,
+                },
             )
-        self.stdout.write("Habilitations de l'administrateur alignees.")
+        self.stdout.write("Habilitations du super administrateur alignees.")

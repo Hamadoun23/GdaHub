@@ -68,9 +68,18 @@ GDAHUB_JWKS_URL = os.environ.get(
     "GDAHUB_JWKS_URL", "http://localhost:8000/.well-known/jwks.json"
 )
 
-# Le compte administrateur cree au premier demarrage.
-GDAHUB_ADMIN_IDENTIFIANT = os.environ.get("GDAHUB_ADMIN_IDENTIFIANT", "admin")
+# Le super administrateur cree au premier demarrage. Ce n'est pas un compte
+# de service anonyme mais le responsable IT du groupe : le journal des
+# connexions reste lisible des la premiere seance.
+GDAHUB_ADMIN_IDENTIFIANT = os.environ.get(
+    "GDAHUB_ADMIN_IDENTIFIANT", "hcisse@gdamali.net"
+)
 GDAHUB_ADMIN_MOT_DE_PASSE = os.environ.get("GDAHUB_ADMIN_MOT_DE_PASSE", "admin")
+GDAHUB_ADMIN_NOM = os.environ.get("GDAHUB_ADMIN_NOM", "Cisse")
+GDAHUB_ADMIN_PRENOM = os.environ.get("GDAHUB_ADMIN_PRENOM", "Hamadoun")
+GDAHUB_ADMIN_FONCTION = os.environ.get(
+    "GDAHUB_ADMIN_FONCTION", "Responsable IT et developpement"
+)
 
 AUTH_PASSWORD_VALIDATORS = (
     []
