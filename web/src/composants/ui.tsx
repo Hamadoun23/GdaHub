@@ -257,11 +257,13 @@ export function Champ({
 export function ZoneTexte({
   libelle,
   erreurs,
+  aide,
   className,
   ...reste
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   libelle: string;
   erreurs?: string[];
+  aide?: string;
 }) {
   return (
     <label className="block">
@@ -277,6 +279,9 @@ export function ZoneTexte({
           className,
         )}
       />
+      {aide && !erreurs?.length ? (
+        <span className="mt-1 block text-xs text-ardoise-500">{aide}</span>
+      ) : null}
       {erreurs?.length ? (
         <span className="mt-1 block text-xs text-red-600">{erreurs.join(" ")}</span>
       ) : null}
