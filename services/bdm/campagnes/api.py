@@ -1,9 +1,7 @@
-"""Ce que les autres domaines ont le droit de demander a Campagnes.
+"""Ce que les autres domaines ont le droit de demander aux Campagnes.
 
-Aucun service n'importe un modele d'un autre service. Il appelle une fonction
-de ce module, qui aujourd'hui lit la base locale et deviendra un appel HTTP
-le jour ou le domaine sera extrait — sans que l'appelant change d'une ligne.
-
-Tant que rien n'est expose ici, Campagnes est autonome, et c'est la meilleure
-situation possible.
+Rien pour l'instant : le domaine est autonome. Son « client » est un porteur
+de carte bancaire, encore un troisieme sens du mot dans l'ERP — apres
+l'acheteur de jus et l'entreprise du planning editorial. Les trois listes ne
+se recouvrent pas, et c'est pourquoi elles ne sont pas rapprochees.
 """
