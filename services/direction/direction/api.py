@@ -1,6 +1,7 @@
-"""Ce que les autres domaines ont le droit de demander a Direction.
+"""Ce que les autres domaines ont le droit de demander a la Direction.
 
-Aucun service n'importe un modele d'un autre service. Il appelle une fonction
-de ce module, qui aujourd'hui lit la base locale et deviendra un appel HTTP le
-jour ou le domaine sera extrait — sans que l'appelant change d'une ligne.
+Rien, et c'est voulu : la direction consomme, elle n'est pas consommee. Un
+service metier qui aurait besoin d'elle pour fonctionner ferait dependre
+chaque soumission d'un appel reseau — exactement ce que le decoupage cherche
+a eviter.
 """

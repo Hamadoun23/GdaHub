@@ -43,19 +43,25 @@ noir sur blanc.
 | Les **règles** — qui valide, à partir de quel montant, dans quel ordre | `direction` | C'est le métier de la direction, et cela se paramètre |
 | Le **rattachement hiérarchique** | `organisation` | C'est l'organigramme, pas une règle de circuit |
 
-Deux dépendances subsistent, assumées :
+Une seule dépendance subsiste, assumée : à la **création** d'un dossier, le
+service demande à `organisation` l'instantané du demandeur et de son
+responsable. Un appel, sur une action ponctuelle, avec le jeton de
+l'utilisateur — donc sans authentification de service à inventer. Si
+l'annuaire est injoignable, la création échoue franchement plutôt que de
+produire un dossier qui ne remonte à personne.
 
-1. À la **soumission** d'un dossier, le service demande à `organisation` qui
-   est le responsable du demandeur. Un appel, sur une action rare, avec le
-   jeton de l'utilisateur — donc sans authentification de service à inventer.
-   Si l'annuaire est injoignable, la soumission échoue franchement plutôt que
-   de construire un circuit faux.
-2. Les **règles** de `direction` sont **recopiées** dans chaque service et
-   rafraîchies périodiquement. Une panne de `direction` ne bloque donc pas les
-   soumissions : on travaille sur la dernière version connue.
+Tout le reste se lit en local. En particulier, **les règles de circuit vivent
+dans chaque service**, pas chez `direction` : ce sont des règles sur ses
+propres documents, et les lire ailleurs ferait dépendre chaque soumission d'un
+appel réseau. `direction` les administre à travers l'API de chaque service,
+avec le jeton du directeur.
 
-C'est la règle n°2 de l'architecture appliquée à la lettre — on recopie, on ne
-référence pas.
+Une règle du moteur d'origine n'a pas pu être transposée telle quelle : elle
+supprimait d'avance l'étape « service financier » quand le responsable du
+demandeur portait lui-même ce rôle, ce qui suppose de connaître les rôles
+d'autrui. Les habilitations vivant chez `identity`, on procède à l'envers, et
+c'est plus juste : **une seule décision règle toutes les étapes que son auteur
+pouvait trancher**, chacune restant consignée séparément.
 
 ---
 
@@ -111,11 +117,11 @@ Un shell Next.js unique, un module par service, la même grammaire partout :
 | ----- | ------- | ----------------- | ---- |
 | M0 | Socle : passerelle, shell, `identity`, compte unique | Se connecter et voir ses applications | ✔ |
 | M1 | `organisation` | L'organigramme réel est chargé et l'annuaire se parcourt | ✔ |
-| M2 | Socle de validation dans `gdahub_common` | Un document traverse un circuit de bout en bout, testé | ⏳ |
-| M3 | `direction` | Les règles se paramètrent et les services les recopient | — |
-| M4 | `rh` | Un congé posé suit son circuit jusqu'au solde décompté | — |
-| M5 | `finance` | Une réquisition suit son circuit jusqu'à l'engagement | — |
-| M6 | Front Board | Les quatre modules du siège sont utilisables | — |
+| M2 | Socle de validation dans `gdahub_common` | Un document traverse un circuit de bout en bout, testé | ✔ |
+| M3 | `direction` | La console consolide, et tient quand un service se tait | ✔ |
+| M4 | `rh` | Un congé posé suit son circuit jusqu'au solde décompté | ✔ |
+| M5 | `finance` | Une dépense suit son circuit ; caisse, missions, achats | ✔ |
+| M6 | Front Board | Les quatre modules du siège sont utilisables | ⏳ |
 | M7 | `daily` | Un chantier se suit au jour le jour | — |
 | M8 | `planning` | Un planning de publication se tient | — |
 | M9 | `orange` | La chaîne récolte → distribution est complète | — |

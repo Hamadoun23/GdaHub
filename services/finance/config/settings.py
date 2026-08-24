@@ -9,6 +9,7 @@ signe par identity, et ne stocke a cote de ses donnees que des identifiants
 numeriques, jamais de cle etrangere vers un autre service.
 """
 
+import os
 from pathlib import Path
 
 from gdahub_common.reglages import *  # noqa: F403
@@ -18,13 +19,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 GDAHUB_APPLICATION = "finance"
 
-INSTALLED_APPS = [*INSTALLED_APPS, "finance"]
+# `gdahub_common.validation` apporte le moteur de circuit et ses tables :
+# chaque service porte les siennes, aucune decision ne traverse le reseau.
+INSTALLED_APPS = [*INSTALLED_APPS, "gdahub_common.validation", "finance"]
 
 MEDIA_ROOT = BASE_DIR / "media"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Les services que celui-ci a le droit d'appeler, via gdahub_common.client.
+# Un seul service appele, et un seul appel : l'annuaire, au moment ou une
+# demande est deposee. Tout le reste se lit en local.
 GDAHUB_SERVICES: dict[str, str] = {
-    "organisation": "http://organisation:8000",
-    "direction": "http://direction:8000",
+    "organisation": os.environ.get(
+        "GDAHUB_SERVICE_ORGANISATION", "http://organisation:8000"
+    ),
 }
