@@ -1,9 +1,20 @@
 """Routes du domaine Planning, montees sous /api/planning/."""
 
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
-from planning.views import Apercu
+from planning import views
+
+routeur = DefaultRouter()
+routeur.register("clients", views.ClientViewSet, basename="client")
+routeur.register("regles", views.ReglePublicationViewSet, basename="regle")
+routeur.register("idees", views.IdeeContenuViewSet, basename="idee")
+routeur.register("tournages", views.TournageViewSet, basename="tournage")
+routeur.register("publications", views.PublicationViewSet, basename="publication")
+routeur.register("rapports", views.RapportClientViewSet, basename="rapport")
 
 urlpatterns = [
-    path("apercu", Apercu.as_view(), name="apercu"),
+    path("calendrier", views.Calendrier.as_view(), name="calendrier"),
+    path("tableau-de-bord", views.TableauDeBord.as_view(), name="tableau-de-bord"),
+    path("", include(routeur.urls)),
 ]
