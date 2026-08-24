@@ -30,6 +30,24 @@ APPLICATIONS = [
         ],
     },
     {
+        "code": "financerh",
+        "nom": "RH & Finance",
+        "description": "Conges, permissions, retards et validation des depenses.",
+        "chemin": "/rh-finance",
+        "prefixe_api": "/api/financerh",
+        "couleur": "#0369a1",
+        "ordre": 5,
+        # Les quatre roles de l'application d'origine, repris a l'identique.
+        # L'encadrement n'en est pas un : il se lit du rattachement d'un agent
+        # a un responsable, et c'est ce lien qui designe le premier valideur.
+        "roles_disponibles": [
+            {"code": "salarie", "libelle": "Salarie"},
+            {"code": "rh", "libelle": "Ressources humaines"},
+            {"code": "finance", "libelle": "Finance"},
+            {"code": "direction", "libelle": "Direction"},
+        ],
+    },
+    {
         "code": "bdm",
         "nom": "Campagnes",
         "description": "Campagnes de cartes bancaires : ventes, enrolements, primes.",

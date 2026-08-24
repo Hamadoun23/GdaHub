@@ -1,9 +1,10 @@
 # GDA Hub — centralise tous les services et informations
 
 Un seul compte par personne, une seule adresse, et derrière les applications du
-groupe : **Campagnes** (BDM/UBA), **Jus d'Orange**, **Chantiers** et
-**Planning**. Le directeur général se connecte une fois et retrouve les quatre ;
-un commercial de terrain se connecte de la même façon et n'en voit qu'une.
+groupe : **RH & Finance**, **Campagnes** (BDM/UBA), **Jus d'Orange**,
+**Chantiers** et **Planning**. Le directeur général se connecte une fois et
+retrouve les cinq ; un commercial de terrain se connecte de la même façon et
+n'en voit qu'une.
 
 Stack : **Django + DRF**, **React / Next.js**, **PostgreSQL**, le tout dans
 Docker. Rien d'autre.
@@ -38,12 +39,13 @@ reconstruire l'image, côté Django comme côté Next.
 | `gateway`    | nginx, l'unique porte d'entrée           | —          | **8080**   |
 | `web`        | shell React/Next, toutes les interfaces  | —          | 3100       |
 | `identity`   | comptes, habilitations, signature des jetons | `identity` | 8101   |
+| `financerh`  | congés, permissions, retards, dépenses   | `financerh`| 8106       |
 | `bdm`        | campagnes de cartes bancaires            | `bdm`      | 8102       |
 | `orange`     | récolte, fabrication, distribution       | `orange`   | 8103       |
 | `daily`      | suivi de chantier                        | `daily`    | 8104       |
 | `planning`   | publications, tournages                  | `planning` | 8105       |
 
-**Cinq bases Postgres distinctes, une par service.** Aucun service ne peut lire
+**Six bases Postgres distinctes, une par service.** Aucun service ne peut lire
 les tables d'un autre, même par erreur : c'est cette contrainte qui rend le
 découpage réel plutôt que déclaratif. Tous les ports sont publiés sur
 `127.0.0.1` seulement, et décalés pour cohabiter avec la pile FinanceRH.
@@ -102,6 +104,7 @@ GdaHub/
 ├─ libs/gdahub_common/      le socle partagé par tous les services Django
 ├─ services/
 │  ├─ identity/             comptes, habilitations, jetons
+│  ├─ financerh/            domaine « rhfinance »
 │  ├─ bdm/                  domaine « campagnes »
 │  ├─ orange/               domaine « jusorange »
 │  ├─ daily/                domaine « chantiers »
@@ -145,7 +148,7 @@ monté par agrégation finisse avec trois référentiels qui divergent en silenc
 | Socle partagé (auth, permissions, pagination, erreurs) | fait |
 | `identity` : comptes, habilitations, jetons, journal | fait |
 | Passerelle, shell, connexion, tableau de bord | fait |
-| Squelettes des quatre services métier | fait |
+| Squelettes des cinq services métier | fait |
 | Domaines métier (modèles, vues, écrans) | **à porter** |
 
 Chaque service métier répond aujourd'hui sur `/api/<code>/apercu` : la page de
@@ -160,12 +163,20 @@ vague, jamais deux en parallèle** :
 
 | Vague | Service | Source | Pourquoi celle-là |
 | ----- | ------- | ------ | ----------------- |
-| 1 | `daily` | `ERP-GDA-Aba-4-module-/backend/apps/chantiers` | Déjà en Django/DRF, modèles et sérialiseurs repris tels quels |
-| 2 | `planning` | `ERP-GDA-Aba-4-module-/backend/apps/planning` | Même situation, domaine plus petit |
-| 3 | `orange` | `DocsERP/Orange-full2/back` | Django + DRF, mais huit modules à découper |
-| 4 | `bdm` | `DocsERP/BDM/backend` | Le plus lourd : Inertia à remplacer par du DRF, schéma hérité de Laravel, migration MySQL → Postgres |
+| 1 | `financerh` | `FinanceRH` (en production) | Elle détient déjà l'annuaire réel : agents, départements, responsables. C'est d'elle que doivent sortir les comptes d'`identity`, pas d'une saisie manuelle |
+| 2 | `daily` | `ERP-GDA-Aba-4-module-/backend/apps/chantiers` | Déjà en Django/DRF, modèles et sérialiseurs repris tels quels |
+| 3 | `planning` | `ERP-GDA-Aba-4-module-/backend/apps/planning` | Même situation, domaine plus petit |
+| 4 | `orange` | `DocsERP/Orange-full2/back` | Django + DRF, mais huit modules à découper |
+| 5 | `bdm` | `DocsERP/BDM/backend` | Le plus lourd : Inertia à remplacer par du DRF, schéma hérité de Laravel, migration MySQL → Postgres |
 
-Avant la vague 1, un arbitrage reste à rendre : les entités partagées
+Une réserve sur la vague 1 : FinanceRH **tourne en production** sur
+rh.gdamali.net, avec des congés posés et des demandes en cours de validation.
+On ne la bascule pas, on la double — l'identité passe à `identity`, le reste
+suit quand le hub a fait ses preuves. Reprendre son annuaire d'abord n'oblige
+en rien à éteindre l'application existante.
+
+Avant la vague 2, un arbitrage reste à rendre : les entités partagées
 (**employés, sites/agences, clients, périodes**) doivent avoir **un propriétaire
 unique**. C'est le piège n°1 d'un ERP monté par agrégation, et cela se règle
-avant le code.
+avant le code. FinanceRH étant la seule à tenir un organigramme réel, elle est
+la candidate évidente pour posséder « employé » — à confirmer.
