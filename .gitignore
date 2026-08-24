@@ -2,6 +2,10 @@
 .env
 *.pem
 
+# L'organigramme reel — noms, adresses, rattachements — est une donnee, pas
+# du code. Seul l'exemple anonyme est publie.
+infra/effectif/personnel.json
+
 # Python
 __pycache__/
 *.py[cod]

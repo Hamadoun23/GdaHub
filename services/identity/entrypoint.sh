@@ -19,5 +19,12 @@ python manage.py migrate --noinput
 echo "[identity] donnees de depart"
 python manage.py amorcer
 
+# Confort de developpement : l'ERP demarre avec un effectif a l'ecran plutot
+# qu'un annuaire vide. Idempotent, et sans effet sur les mots de passe deja
+# personnalises. A retirer d'une image de production, ou l'import est une
+# operation decidee.
+echo "[identity] comptes de l'effectif"
+python manage.py importer_comptes
+
 echo "[identity] demarrage"
 exec python manage.py runserver 0.0.0.0:8000

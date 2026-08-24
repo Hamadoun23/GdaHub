@@ -166,6 +166,9 @@ services:
       # Les cles de signature vivent dans un volume : sans lui, chaque
       # reconstruction d'image deconnecterait tout le monde.
       - cles:/cles
+      # L'organigramme reel est depose sur la machine, jamais dans l'image ni
+      # dans le depot. Absent, l'ERP s'amorce sur l'exemple anonyme.
+      - ./infra/effectif:/effectif:ro
     ports: ["127.0.0.1:8101:8000"]
 
   # --- Board : le siege ---------------------------------------------------
@@ -189,6 +192,9 @@ services:
       - ./services/organisation:/app
       - ./libs/gdahub_common:/libs/gdahub_common
       - media-organisation:/app/media
+      # Meme fichier que pour identity : l'un y prend les comptes, l'autre
+      # les fiches d'agent, et les deux en tirent le meme identifiant.
+      - ./infra/effectif:/effectif:ro
     ports: ["127.0.0.1:8106:8000"]
 
   rh:

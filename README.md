@@ -189,12 +189,45 @@ monté par agrégation finisse avec trois référentiels qui divergent en silenc
 | `identity` : comptes, habilitations, jetons, journal | fait |
 | Passerelle, shell, connexion, tableau de bord | fait |
 | Squelettes des huit services métier | fait |
-| Domaines métier (modèles, vues, écrans) | **à porter** |
+| **`organisation` : agents, départements, organigramme** | **fait** — 26 tests |
+| `rh`, `finance`, `direction`, et les quatre métiers | **à porter** |
 
-Chaque service répond aujourd'hui sur `/api/<code>/apercu` : la page de
+Les services non portés répondent sur `/api/<code>/apercu` : la page de
 l'application dans le shell appelle ce point d'entrée et affiche les rôles que
 le service a lus dans le jeton. Tant qu'il répond, la chaîne complète — compte
 unique, signature, vérification, cloisonnement — fonctionne.
+
+Les tests d'un service se lancent depuis son conteneur :
+
+```powershell
+docker compose exec organisation python manage.py test
+```
+
+### L'effectif : un fichier, deux services
+
+L'organigramme réel — noms, adresses, rattachements — est une **donnée, pas du
+code**. Il vit dans `infra/effectif/personnel.json`, ignoré par git ; le dépôt
+ne publie que `personnel.exemple.json`, un jeu anonyme de même forme. Sans
+fichier réel, l'ERP s'amorce sur l'exemple : il démarre et se parcourt sans
+jamais exposer qui que ce soit.
+
+Deux commandes lisent ce même fichier, chacune dans son service :
+
+```powershell
+docker compose exec identity     python manage.py importer_comptes
+docker compose exec organisation python manage.py importer_effectif
+```
+
+`identity` y crée les **comptes** et traduit le rôle unique de l'application
+d'origine (SALARIE, RH, FINANCE, DIRECTION) en **habilitations par
+application** — c'est le vrai travail de la reprise, et il est écrit à un seul
+endroit. `organisation` y crée les **fiches d'agent**.
+
+Les deux services ne s'appellent jamais. Ils dérivent le même identifiant de
+connexion via `gdahub_common.effectif`, et **la fiche rejoint son compte à la
+première connexion de l'intéressé** : son jeton porte à la fois son identifiant
+et le numéro de son compte, les deux bouts du lien. Cela évite d'inventer une
+authentification de service pour un simple appariement.
 
 ### Ordre de reprise
 
