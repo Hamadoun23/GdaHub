@@ -9,6 +9,7 @@ signe par identity, et ne stocke a cote de ses donnees que des identifiants
 numeriques, jamais de cle etrangere vers un autre service.
 """
 
+import os
 from pathlib import Path
 
 from gdahub_common.reglages import *  # noqa: F403
@@ -18,11 +19,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 GDAHUB_APPLICATION = "orange"
 
-INSTALLED_APPS = [*INSTALLED_APPS, "jusorange"]
+INSTALLED_APPS = [*INSTALLED_APPS, "gdahub_common.validation", "jusorange"]
 
 MEDIA_ROOT = BASE_DIR / "media"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Les services que celui-ci a le droit d'appeler, via gdahub_common.client.
 # Tant que la liste est vide, il est autonome — c'est l'objectif.
-GDAHUB_SERVICES: dict[str, str] = {}
+GDAHUB_SERVICES: dict[str, str] = {
+    "organisation": os.environ.get(
+        "GDAHUB_SERVICE_ORGANISATION", "http://organisation:8000"
+    ),
+}

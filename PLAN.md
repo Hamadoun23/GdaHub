@@ -124,8 +124,8 @@ Un shell Next.js unique, un module par service, la même grammaire partout :
 | M6 | Front Board | Les quatre modules du siège sont utilisables | ✔ |
 | M7 | `daily` | Un chantier se suit au jour le jour | ✔ |
 | M8 | `planning` | Un planning de publication se tient | ✔ |
-| M9 | `orange` | La chaîne récolte → distribution est complète | ⏳ |
-| M10 | `bdm` | Une campagne se pilote de la vente au versement de la prime | — |
+| M9 | `orange` | La chaîne récolte → distribution est complète | ✔ |
+| M10 | `bdm` | Une campagne se pilote de la vente au versement de la prime | ⏳ |
 
 **FinanceRH reste en production sur rh.gdamali.net pendant toute la durée du
 chantier.** On lit son schéma et ses données ; on n'y touche pas. La bascule
