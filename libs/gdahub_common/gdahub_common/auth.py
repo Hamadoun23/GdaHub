@@ -14,57 +14,14 @@ faudrait interroger identity, ce qui recreerait le couplage qu'on evite.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
 import jwt
 from django.conf import settings
 from django.core.cache import cache
 from rest_framework import authentication, exceptions
 
+from gdahub_common.identite import UtilisateurJeton
 
-@dataclass
-class UtilisateurJeton:
-    """L'utilisateur tel que le jeton le decrit. Il n'est jamais en base.
-
-    `roles` ne contient que les roles de l'application courante : un DG
-    habilite sur trois applications recoit trois listes distinctes, et chaque
-    service ne voit que la sienne.
-    """
-
-    id: int
-    identifiant: str
-    nom_complet: str = ""
-    email: str = ""
-    est_superadmin: bool = False
-    roles: list[str] = field(default_factory=list)
-    habilitations: dict[str, list[str]] = field(default_factory=dict)
-    jeton: str = ""
-
-    @property
-    def is_authenticated(self) -> bool:
-        return True
-
-    @property
-    def is_anonymous(self) -> bool:
-        return False
-
-    @property
-    def pk(self) -> int:
-        return self.id
-
-    def a_role(self, *roles: str) -> bool:
-        """Vrai si l'utilisateur porte l'un des roles sur cette application."""
-        if self.est_superadmin:
-            return True
-        return any(role in self.roles for role in roles)
-
-    def a_acces(self, application: str) -> bool:
-        if self.est_superadmin:
-            return True
-        return bool(self.habilitations.get(application))
-
-    def __str__(self) -> str:
-        return self.identifiant
+__all__ = ["UtilisateurJeton", "AuthentificationJeton", "decoder", "vider_cache_cles"]
 
 
 def _cles_publiques() -> jwt.PyJWKClient:

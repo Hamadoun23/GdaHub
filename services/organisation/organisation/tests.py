@@ -194,8 +194,45 @@ class ContratInterServices(TestCase):
         """Le contrat est ferme : un champ ajoute ici se recopie partout."""
         self.assertEqual(
             set(self.agent.instantane()),
-            {"agent_id", "matricule", "nom_complet", "poste", "departement_nom"},
+            {
+                "agent_id",
+                "compte_id",
+                "identifiant",
+                "matricule",
+                "nom_complet",
+                "poste",
+                "departement_id",
+                "departement_nom",
+            },
         )
+
+    def test_contexte_porte_le_responsable(self):
+        """Un document recopie le demandeur et son valideur en un seul appel."""
+        contexte = self.agent.contexte()
+        self.assertEqual(contexte["agent_id"], self.agent.pk)
+        self.assertEqual(contexte["responsable"]["agent_id"], self.directeur.pk)
+
+    def test_contexte_sans_responsable(self):
+        self.assertIsNone(self.directeur.contexte()["responsable"])
+
+    def test_contexte_du_compte(self):
+        self.assertEqual(api.contexte_du_compte(12)["nom_complet"], "Awa Traore")
+
+    def test_le_chef_de_departement_prime_sur_le_rattachement(self):
+        """Le responsable du departement connait la charge de l'equipe.
+
+        C'est la regle de l'application d'origine : le rattachement direct ne
+        sert que si le departement n'a pas de responsable.
+        """
+        chef = Agent.objects.create(identifiant="chef@gdamali.net", nom="Chef")
+        self.departement.responsable = chef
+        self.departement.save(update_fields=["responsable"])
+        self.assertEqual(self.agent.responsable_effectif().pk, chef.pk)
+
+    def test_un_chef_de_departement_n_est_pas_son_propre_valideur(self):
+        self.departement.responsable = self.agent
+        self.departement.save(update_fields=["responsable"])
+        self.assertEqual(self.agent.responsable_effectif().pk, self.directeur.pk)
 
     def test_instantane_du_compte(self):
         self.assertEqual(api.instantane_du_compte(12)["nom_complet"], "Awa Traore")

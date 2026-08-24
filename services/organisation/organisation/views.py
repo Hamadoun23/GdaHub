@@ -145,6 +145,23 @@ class MaFiche(APIView):
         return Response(formulaire.data)
 
 
+class MonContexte(APIView):
+    """Ce qu'un service metier recopie a la creation d'un document.
+
+    Le demandeur et son responsable, en un seul appel. C'est le contrat le
+    plus consomme de l'ERP : chaque conge pose, chaque depense engagee passe
+    par la une fois, et plus jamais ensuite.
+    """
+
+    permission_classes = [EstHabilite]
+
+    def get(self, requete):
+        agent = services.fiche_du_porteur(requete.user)
+        if agent is None:
+            return Response(INTROUVABLE, status=status.HTTP_404_NOT_FOUND)
+        return Response(agent.contexte())
+
+
 class Organigramme(APIView):
     """L'arbre des rattachements, du sommet aux equipes."""
 

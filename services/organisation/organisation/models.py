@@ -266,14 +266,58 @@ class Agent(Horodate):
     def instantane(self) -> dict:
         """Les champs que les autres services recopient chez eux.
 
-        Ils ne gardent qu'un identifiant et ce qu'ils affichent. Un service
-        qui a besoin d'autre chose passe par l'API : c'est la garantie que
+        Ils ne gardent que ces valeurs et ce qu'ils affichent. Un service qui
+        a besoin d'autre chose passe par l'API : c'est la garantie que
         l'annuaire ne se duplique pas en silence.
+
+        `compte_id` figure ici parce que tout l'ERP en depend pour router une
+        decision : une etape de validation vise une personne *connectee*, pas
+        une ligne d'annuaire. Il vaut `None` pour un agent sans compte, et
+        l'etape retombe alors sur le role.
         """
         return {
             "agent_id": self.pk,
+            "compte_id": self.compte_id,
+            # L'identifiant de connexion est la seule cle qui traverse tout
+            # l'ERP sans traduction : les numeros de compte et d'agent vivent
+            # dans des bases differentes, celui-ci est le meme partout.
+            "identifiant": self.identifiant,
             "matricule": self.matricule,
             "nom_complet": self.nom_complet,
             "poste": self.poste,
+            "departement_id": self.departement_id,
             "departement_nom": self.departement.nom if self.departement else "",
         }
+
+    def contexte(self) -> dict:
+        """L'instantane du demandeur, son responsable compris.
+
+        C'est la forme dont les autres services ont besoin au moment ou un
+        document est cree : ils recopient tout cela une fois pour toutes, et
+        n'ont plus jamais a interroger l'annuaire — ni pour afficher une
+        liste, ni pour savoir a qui remonte une demande.
+
+        Le responsable est celui du departement du demandeur, a defaut son
+        rattachement direct. C'est la regle de l'application d'origine, et
+        elle a une raison : le responsable d'un departement connait la charge
+        de son equipe, ce qu'un rattachement purement nominal ne dit pas
+        toujours.
+        """
+        responsable = self.responsable_effectif()
+        return {
+            **self.instantane(),
+            "responsable": responsable.instantane() if responsable else None,
+        }
+
+    def responsable_effectif(self) -> "Agent | None":
+        """Qui repond de cet agent : son departement d'abord, son chef ensuite.
+
+        Un agent qui dirige lui-meme son departement ne peut pas etre son
+        propre valideur : on retombe alors sur son rattachement.
+        """
+        chef_de_departement = (
+            self.departement.responsable if self.departement_id else None
+        )
+        if chef_de_departement is not None and chef_de_departement.pk != self.pk:
+            return chef_de_departement
+        return self.responsable

@@ -1,6 +1,7 @@
-"""Ce que les autres domaines ont le droit de demander a Ressources humaines.
+"""Ce que les autres domaines ont le droit de demander aux Ressources humaines.
 
-Aucun service n'importe un modele d'un autre service. Il appelle une fonction
-de ce module, qui aujourd'hui lit la base locale et deviendra un appel HTTP le
-jour ou le domaine sera extrait — sans que l'appelant change d'une ligne.
+Rien pour l'instant, et c'est la meilleure situation possible : le domaine est
+autonome. Le jour ou la finance aura besoin de savoir si un agent est en conge
+avant de valider un ordre de mission, la fonction s'ecrira ici — jamais un
+import de modele.
 """

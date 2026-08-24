@@ -11,6 +11,7 @@ routeur.register("departements", views.DepartementViewSet, basename="departement
 
 urlpatterns = [
     path("ma-fiche", views.MaFiche.as_view(), name="ma-fiche"),
+    path("mon-contexte", views.MonContexte.as_view(), name="mon-contexte"),
     path("organigramme", views.Organigramme.as_view(), name="organigramme"),
     path("", include(routeur.urls)),
 ]

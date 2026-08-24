@@ -8,9 +8,16 @@ Organisation etant deja un service a part entiere, ces fonctions ne servent
 qu'a l'interieur : c'est l'API HTTP que les autres consomment, et le contrat
 est le meme des deux cotes.
 
+    GET /api/organisation/mon-contexte             tout ce qu'un document
+                                                   doit recopier a sa creation
     GET /api/organisation/agents/{id}/instantane   les champs a recopier
     GET /api/organisation/agents/{id}/hierarchie   la suite des responsables
     GET /api/organisation/agents?departement=      l'effectif d'une unite
+
+`mon-contexte` est la route la plus importante des quatre : elle evite aux
+services metier d'interroger l'annuaire ailleurs qu'a la creation d'un
+document. Tout le reste — listes, files de validation, tableaux de bord — se
+lit ensuite chez eux, sans un seul appel reseau.
 
 Ce que les autres services doivent en retenir : ils recopient l'instantane,
 ils ne stockent pas de cle etrangere. Quand un nom change ici, les documents
@@ -39,6 +46,23 @@ def instantane_du_compte(compte_id: int) -> dict | None:
         Agent.objects.select_related("departement").filter(compte_id=compte_id).first()
     )
     return agent.instantane() if agent else None
+
+
+def contexte_du_compte(compte_id: int) -> dict | None:
+    """L'instantane du demandeur et de son responsable, en une seule lecture.
+
+    C'est ce qu'un service metier recopie au moment ou un document est cree.
+    Ensuite il ne demande plus rien : le nom du demandeur, son departement et
+    le compte de son responsable sont figes dans son propre enregistrement.
+    """
+    agent = (
+        Agent.objects.select_related(
+            "departement__responsable__departement", "responsable__departement"
+        )
+        .filter(compte_id=compte_id)
+        .first()
+    )
+    return agent.contexte() if agent else None
 
 
 def responsable_de(agent_id: int) -> dict | None:
