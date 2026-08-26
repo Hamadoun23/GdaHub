@@ -129,6 +129,9 @@ def emettre_acces(utilisateur: Utilisateur) -> str:
             "email": utilisateur.email,
             "est_superadmin": utilisateur.is_superuser,
             "habilitations": utilisateur.habilitations_actives(),
+            # Sous quel nom chaque application connait cette personne, quand
+            # ce n'est pas son adresse. Voir Utilisateur.identifiants_locaux.
+            "identifiants_locaux": utilisateur.identifiants_locaux(),
         }
     )
     return jwt.encode(

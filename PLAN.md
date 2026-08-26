@@ -68,6 +68,31 @@ elle en garde une copie datee, jamais un lien vivant.
 C'est le seul point commun entre les cinq applications, et le seul endroit ou
 le hub s'invite dans leur code.
 
+### Le chainon qu'on n'avait pas vu : les identifiants ne se ressemblent pas
+
+Le hub identifie une personne par son adresse professionnelle. Les
+applications rassemblees, elles, ont ete peuplees a des epoques et par des
+chemins differents :
+
+| Application | Ce que portent ses comptes | Exemple |
+| ----------- | -------------------------- | ------- |
+| FinanceRH | l'adresse professionnelle | `hcisse@gdamali.net` |
+| Jus d'orange | des comptes de role | `resprod@jusorange.local` |
+| BDM | des adresses fabriquees a la reprise depuis Laravel | `juin2026.74082712@import.gda` |
+
+Rien ne relie ces trois vues d'une meme personne. **Sans correspondance, le
+compte unique ne fonctionnerait que pour FinanceRH**, et le hub ne
+rassemblerait rien du tout.
+
+D'ou `Habilitation.identifiant_local` : une ligne par compte et par
+application dit sous quel nom cette personne y est connue. Le champ reste vide
+quand l'adresse suffit. Le jeton transporte la table, et chaque application ne
+lit que sa propre entree — prendre celle du voisin ouvrirait la session de
+quelqu'un d'autre.
+
+C'est du travail de donnees, pas de code : quelqu'un qui connait les gens doit
+dire qui est qui. Le hub ne peut pas le deviner.
+
 `identity` signe un jeton RS256. Chaque application le verifie par la cle
 publique publiee sur `/.well-known/jwks.json`, puis **rattache le jeton a son
 propre utilisateur** par l'adresse professionnelle. Rien d'autre ne change chez
@@ -133,8 +158,18 @@ L'ordre suit le risque : ce qui peut invalider le reste passe en premier.
 | Socle : identity, jetons RS256, JWKS, habilitations | fait |
 | Passerelle nginx, un domaine | fait |
 | Annuaire (organisation) | fait |
-| FinanceRH sous `/rh/` | en cours |
-| Jus d'orange sous `/jus/` | a faire |
-| BDM sous `/bdm/` | a faire |
+| FinanceRH sous `/rh/` | ecrit, non execute |
+| Jus d'orange sous `/jus/` | ecrit, non execute |
+| BDM sous `/bdm/` | ecrit, non execute |
+| Correspondance des identifiants locaux | ecrite, non executee |
+| Reprise des donnees de production | script ecrit, sauvegardes recuperees |
 | Retrait des modules reecrits | a faire |
 | Daily et Planning repris du stagiaire | a faire |
+| Remplir la correspondance des identifiants | a faire — travail de donnees |
+
+« Ecrit, non execute » veut dire ce qu'il dit : le code et la configuration
+sont en place, les deux fichiers compose sont valides et les 77 tests de
+FinanceRH passent, mais **rien n'a encore tourne sous la passerelle**. Docker
+Desktop ne demarre plus sur la machine de developpement (WSL ne parvient plus
+a creer de machine virtuelle). Aucune de ces lignes ne doit etre tenue pour
+acquise avant d'avoir vu la chaine complete fonctionner.

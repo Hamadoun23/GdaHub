@@ -113,6 +113,31 @@ class Utilisateur(AbstractBaseUser, PermissionsMixin):
             .order_by("application__ordre")
         }
 
+    def identifiants_locaux(self) -> dict[str, str]:
+        """Sous quel nom ce compte est connu de chaque application.
+
+        **Pourquoi cette table existe.** Le hub identifie une personne par son
+        adresse professionnelle. Les applications rassemblees, elles, ont ete
+        peuplees a des epoques et par des chemins differents : FinanceRH tient
+        des adresses en @gdamali.net, Jus d'orange des comptes de role
+        (« resprod@jusorange.local »), BDM des adresses fabriquees lors de la
+        reprise depuis Laravel (« juin2026.74082712@import.gda »).
+
+        Rien ne relie ces trois vues d'une meme personne. Sans cette
+        correspondance, le compte unique ne fonctionnerait que pour FinanceRH,
+        et le hub ne rassemblerait rien du tout.
+
+        Seules les entrees renseignees figurent ici : quand l'adresse
+        professionnelle suffit, il n'y a rien a dire.
+        """
+        return {
+            habilitation.application.code: habilitation.identifiant_local
+            for habilitation in self.habilitations.select_related("application")
+            .filter(active=True, application__active=True)
+            .exclude(identifiant_local="")
+            .order_by("application__ordre")
+        }
+
 
 class Application(models.Model):
     """Une des applications de GDA Hub.
@@ -193,6 +218,16 @@ class Habilitation(models.Model):
         default=list,
         blank=True,
         help_text="Codes de roles, pris dans roles_disponibles de l'application.",
+    )
+    identifiant_local = models.CharField(
+        "Identifiant dans l'application",
+        max_length=150,
+        blank=True,
+        help_text=(
+            "Sous quel nom cette personne est connue de l'application, quand "
+            "ce n'est pas son adresse professionnelle. Laisser vide si les "
+            "deux coincident."
+        ),
     )
     active = models.BooleanField("Habilitation active", default=True)
     accordee_le = models.DateTimeField("Accordee le", auto_now_add=True)
