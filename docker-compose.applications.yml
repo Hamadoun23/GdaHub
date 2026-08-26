@@ -1,0 +1,97 @@
+# Les applications que GDA Hub rassemble.
+#
+# Elles ne sont pas des services du hub : ce sont des applications completes,
+# qui tournent deja en production sur leur propre domaine et qui continueront
+# de le faire. Le hub ne fait que les servir sous une seule origine et leur
+# apporter un compte unique.
+#
+# D'ou ce fichier separe : le jour ou l'une d'elles quitte le hub, on retire
+# son bloc, et rien d'autre ne bouge.
+#
+# Le code n'est pas duplique. Chaque application est montee depuis son depot
+# d'origine, la ou elle vit deja :
+#
+#   ../FinanceRH                       FinanceRH   (rh.gdamali.net)
+#   ../FinanceRH/DocsERP/Orange-full2  Jus d'orange (jus.gdamali.net)
+#   ../FinanceRH/DocsERP/BDM           BDM          (bdm.gdamali.net)
+#
+# Les deux dernieres vivent aujourd'hui dans DocsERP ; leur place naturelle
+# serait a cote de GdaHub, mais les deplacer casserait les chemins du depot
+# FinanceRH. A traiter separement.
+#
+# Demarrage : ce fichier est joint au principal par COMPOSE_FILE, dans .env.
+# Un « docker compose up -d » suffit donc, sans option supplementaire.
+
+services:
+  # --- FinanceRH -----------------------------------------------------------
+  # Servie sous /rh/. Sa base lui appartient : le hub n'y touche jamais.
+  financerh-db:
+    image: supabase/postgres:17.6.1.136
+    container_name: gdahub-financerh-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
+      POSTGRES_PORT: 5432
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      JWT_EXP: 3600
+    volumes:
+      - donnees-financerh:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres -h 127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  financerh-api:
+    build:
+      context: ../FinanceRH/backend
+      target: developpement
+    container_name: gdahub-financerh-api
+    restart: unless-stopped
+    depends_on:
+      financerh-db: {condition: service_healthy}
+      identity: {condition: service_started}
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-developpement-local-non-secret}
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,gateway,financerh-api
+      DJANGO_TIME_ZONE: Africa/Bamako
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-gdahub-local}@financerh-db:5432/postgres
+      # Le rattachement au compte unique. Absente en production, cette
+      # variable laisse FinanceRH avec sa seule connexion maison.
+      GDAHUB_JWKS_URL: http://identity:8000/.well-known/jwks.json
+      GDAHUB_JETON_EMETTEUR: gdahub-identity
+      GDAHUB_JETON_AUDIENCE: gdahub
+      # Les justificatifs sont servis en adresse absolue : sans ce prefixe,
+      # ils pointeraient hors de /rh/ et tomberaient sur la coquille du hub.
+      MEDIA_URL: /rh/media/
+    volumes:
+      - ../FinanceRH/backend:/app
+      - /app/.venv
+      - media-financerh:/app/media
+    ports: ["127.0.0.1:8110:8000"]
+
+  financerh-web:
+    build:
+      context: ../FinanceRH/frontend
+      target: developpement
+    container_name: gdahub-financerh-web
+    restart: unless-stopped
+    depends_on: [financerh-api]
+    environment:
+      # Servie sous /rh/ : Next prefixe ses propres routes, et l'API est
+      # jointe par la passerelle sur le meme chemin. Aucune requete ne sort
+      # de l'origine du hub, donc aucun CORS.
+      NEXT_PUBLIC_CHEMIN_BASE: /rh
+      NEXT_PUBLIC_API_URL: /rh/api
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ../FinanceRH/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports: ["127.0.0.1:3110:3000"]
+
+volumes:
+  donnees-financerh:
+  media-financerh:

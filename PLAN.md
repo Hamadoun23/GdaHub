@@ -1,134 +1,140 @@
-# Plan de développement de GDA Hub
+# Plan de developpement de GDA Hub
 
-Ce document dit **quoi construire, dans quel ordre, et pourquoi cet ordre-là**.
-Il se met à jour au fur et à mesure ; l'état d'avancement vit dans la
-section 6.
+Ce document dit **quoi construire, dans quel ordre, et pourquoi cet ordre-la**.
+L'etat d'avancement vit dans la derniere section.
 
 ---
 
-## 1. Le principe qui commande tout le reste
+## 1. Ce que GDA Hub est - et ce qu'il n'est pas
 
-Un ERP monté par agrégation échoue toujours de la même façon : trois
-référentiels d'« employé » qui divergent en silence. L'ordre de construction
-découle donc d'une seule règle — **on porte d'abord ce que les autres
-consomment**, jamais l'inverse.
+GDA Hub **ne developpe aucune application metier**. Trois d'entre elles
+tournent deja en production, elles fonctionnent, et les reecrire serait
+detruire du travail qui sert tous les jours.
+
+| Application | En production sur | Front | Back | Base |
+| ----------- | ----------------- | ----- | ---- | ---- |
+| FinanceRH | `rh.gdamali.net` | Next.js | Django | PostgreSQL 17 |
+| Jus d'orange | `jus.gdamali.net` | Next.js | Django (gunicorn) | - |
+| BDM | `bdm.gdamali.net` | React/Vite via Inertia | Django | MySQL 8 |
+| Daily | *non deployee* | - | Django (stagiaire) | - |
+| Planning | *non deployee* | - | Django (stagiaire) | - |
+
+GDA Hub **rassemble** ces applications. Aujourd'hui elles tournent
+independamment : trois domaines, trois sessions, trois comptes pour la meme
+personne. Le hub en fait un seul systeme.
+
+Ce qu'il apporte, et rien d'autre :
+
+1. **Un domaine** - `hub.gdamali.net`, une passerelle, tout au meme niveau.
+2. **Un compte** - on se connecte une fois, on circule partout.
+3. **Une architecture en microservices** - chaque application garde sa base et
+   son code, aucune ne depend du demarrage d'une autre.
+
+### Ce qui a ete construit a tort
+
+Une premiere version du hub a reecrit huit services metier avec des ecrans
+neufs (rh, finance, orange, bdm, direction, daily, planning). C'etait une
+erreur de lecture : le but n'etait pas de refaire, mais de rassembler. Ce code
+est conserve le temps que les applications reelles soient branchees, puis
+retire.
+
+Ce qui en survit est precisement la machinerie de federation, et elle est
+bonne : `identity` (compte unique, jetons RS256, JWKS), les habilitations par
+application, l'annuaire, la passerelle.
+
+---
+
+## 2. L'architecture cible
 
 ```
-identity          qui a le droit d'entrer                    ✔ fait
-    │
-organisation      qui travaille ici, sous quelle autorité    ✔ fait
-    │
-direction         qui valide quoi, à partir de quel montant
-    │
-    ├── rh        congés, permissions, retards, présences
-    └── finance   engagements, dépenses, caisse, missions
-              puis les quatre applications métier
+hub.gdamali.net  -- passerelle nginx
+|
++-- /               coquille GDA Hub : connexion, accueil, annuaire
++-- /rh/            FinanceRH    (front Next.js + API Django + PostgreSQL)
++-- /jus/           Jus d'orange (front Next.js + API Django)
++-- /bdm/           BDM          (Django + Inertia/React + MySQL)
++-- /chantiers/     Daily        (repris du stagiaire)
++-- /planning/      Planning     (repris du stagiaire)
 ```
 
-`direction` passe avant `rh` et `finance` parce que les deux lui demandent la
-même chose : les règles de circuit. Les applications métier passent en dernier
-parce qu'elles consomment l'annuaire sans rien lui apporter.
+**Une application = un service = une base.** Aucune cle etrangere ne traverse
+une frontiere de service. Ce qu'une application a besoin de savoir d'une autre,
+elle en garde une copie datee, jamais un lien vivant.
 
 ---
 
-## 2. Le circuit de validation : où vit quoi
+## 3. Le compte unique
 
-C'est la décision structurante de tout l'ERP, et elle mérite d'être écrite
-noir sur blanc.
+C'est le seul point commun entre les cinq applications, et le seul endroit ou
+le hub s'invite dans leur code.
 
-| Élément | Où il vit | Pourquoi |
-| ------- | --------- | -------- |
-| Le **moteur** — construire un circuit, enregistrer une décision, clore | `gdahub_common.validation` | Chaque service doit pouvoir valider sans appeler personne |
-| Les **étapes** d'un dossier | dans la base du service qui porte le dossier | Une décision ne traverse jamais le réseau |
-| Les **règles** — qui valide, à partir de quel montant, dans quel ordre | `direction` | C'est le métier de la direction, et cela se paramètre |
-| Le **rattachement hiérarchique** | `organisation` | C'est l'organigramme, pas une règle de circuit |
+`identity` signe un jeton RS256. Chaque application le verifie par la cle
+publique publiee sur `/.well-known/jwks.json`, puis **rattache le jeton a son
+propre utilisateur** par l'adresse professionnelle. Rien d'autre ne change chez
+elle : ses roles, ses permissions, ses ecrans restent les siens.
 
-Une seule dépendance subsiste, assumée : à la **création** d'un dossier, le
-service demande à `organisation` l'instantané du demandeur et de son
-responsable. Un appel, sur une action ponctuelle, avec le jeton de
-l'utilisateur — donc sans authentification de service à inventer. Si
-l'annuaire est injoignable, la création échoue franchement plutôt que de
-produire un dossier qui ne remonte à personne.
+Les trois applications ne s'authentifient pas de la meme facon, et c'est le
+travail a faire :
 
-Tout le reste se lit en local. En particulier, **les règles de circuit vivent
-dans chaque service**, pas chez `direction` : ce sont des règles sur ses
-propres documents, et les lire ailleurs ferait dépendre chaque soumission d'un
-appel réseau. `direction` les administre à travers l'API de chaque service,
-avec le jeton du directeur.
+| Application | Aujourd'hui | A ajouter |
+| ----------- | ----------- | --------- |
+| FinanceRH | SimpleJWT, `accounts.Utilisateur` | une classe d'authentification qui accepte aussi le jeton du hub |
+| Jus d'orange | jeton DRF + session, `auth.User` | la meme |
+| BDM | session Django, hachages bcrypt herites de Laravel | la meme, plus une entree de session |
 
-Une règle du moteur d'origine n'a pas pu être transposée telle quelle : elle
-supprimait d'avance l'étape « service financier » quand le responsable du
-demandeur portait lui-même ce rôle, ce qui suppose de connaître les rôles
-d'autrui. Les habilitations vivant chez `identity`, on procède à l'envers, et
-c'est plus juste : **une seule décision règle toutes les étapes que son auteur
-pouvait trancher**, chacune restant consignée séparément.
+**Regle : le hub ne remplace jamais l'authentification d'une application, il
+s'ajoute a cote.** Chacune doit continuer a fonctionner seule, sans le hub -
+sinon une panne du hub arrete toute l'entreprise, et le retour arriere devient
+impossible.
+
+**Corollaire : aucun de ces changements ne touche la production.** Le
+rattachement au hub est commande par une variable d'environnement absente en
+production. `rh.gdamali.net` continue de servir a la racine avec son propre
+login tant que la bascule n'est pas decidee.
 
 ---
 
-## 3. Ce que chaque service possède
+## 4. Servir une application sous un chemin
 
-### Board — le siège
+C'est la difficulte technique de la passerelle unique : une application ecrite
+pour la racine ne se sert pas telle quelle sous `/rh/`.
 
-| Service | Possède | Repris de |
-| ------- | ------- | --------- |
-| `organisation` | agents, départements, rattachements, organigramme | `FinanceRH/accounts` |
-| `direction` | règles de circuit, registre consolidé des décisions | `FinanceRH/core` |
-| `rh` | types d'absence, soldes, demandes (congé, permission, retard), présences, évaluations, formations | `FinanceRH/rh` |
-| `finance` | catégories, réquisitions, dépenses, caisse, missions, prestations, bons de commande | `FinanceRH/finance` |
+| Front | Mecanisme | Effet sur la production |
+| ----- | --------- | ----------------------- |
+| Next.js (FinanceRH, Jus) | `basePath` pilote par une variable | aucun : variable absente = racine |
+| Django + Inertia (BDM) | `FORCE_SCRIPT_NAME` + `STATIC_URL` | aucun : meme principe |
 
-### Les quatre applications métier
-
-| Service | Possède | Repris de |
-| ------- | ------- | --------- |
-| `daily` | projets, phases, sous-phases, tâches, avancement journalier, photos, rapports | `ERP-GDA-Aba/apps/chantiers` |
-| `planning` | clients, idées de contenu, tournages, publications, règles, rapports | `ERP-GDA-Aba/apps/planning` |
-| `orange` | récolte, fabrication, entrepôt, distribution, emballage, approvisionnement | `Orange-full2/back` |
-| `bdm` | campagnes, agences, ventes, enrôlements, primes, réclamations | `BDM/backend` |
+Aucun chemin absolu ne doit etre ecrit en dur dans le code. La ou il y en a,
+c'est un defaut a corriger, pas une exception a contourner.
 
 ---
 
-## 4. Le front
+## 5. Ordre de travail
 
-Un shell Next.js unique, un module par service, la même grammaire partout :
+L'ordre suit le risque : ce qui peut invalider le reste passe en premier.
 
-- une **liste** filtrable, une **fiche**, un **formulaire** ;
-- pour tout document validable : le **circuit** affiché en clair, et les
-  actions que le rôle du lecteur autorise, jamais plus ;
-- le menu et le tableau de bord se construisent depuis les habilitations
-  renvoyées par `identity` — aucune liste en dur.
-
----
-
-## 5. Règles qui ne se négocient pas
-
-1. Un domaine = un service = ses tables. Personne d'autre n'y écrit ni n'y lit.
-2. Aucune clé étrangère entre deux domaines : un identifiant nu plus un
-   instantané des champs affichés.
-3. Aucun import d'un modèle d'un autre domaine : tout passe par `api.py`.
-4. Les vues ne portent pas de règle métier ; elle vit dans `services.py`.
-5. Le format d'erreur, la pagination et l'authentification viennent du socle.
-6. **Les tests d'un invariant s'écrivent avant le code du module concerné.**
+1. **FinanceRH sous `/rh/`** - l'application de reference, celle que je connais
+   le mieux. Elle prouve la passerelle, le `basePath` et le compte unique.
+2. **Jus d'orange sous `/jus/`** - meme forme (Next + Django), confirme que la
+   methode se transporte.
+3. **BDM sous `/bdm/`** - forme differente (Django + Inertia, MySQL), eprouve
+   le cas limite.
+4. **Retrait des modules reecrits** - une fois les trois branchees, ce qui fait
+   double emploi est supprime.
+5. **Daily et Planning** - reprise du travail du stagiaire, correction, puis
+   integration au hub comme les autres.
 
 ---
 
-## 6. Avancement
+## 6. Etat d'avancement
 
-| Jalon | Contenu | Critère de sortie | État |
-| ----- | ------- | ----------------- | ---- |
-| M0 | Socle : passerelle, shell, `identity`, compte unique | Se connecter et voir ses applications | ✔ |
-| M1 | `organisation` | L'organigramme réel est chargé et l'annuaire se parcourt | ✔ |
-| M2 | Socle de validation dans `gdahub_common` | Un document traverse un circuit de bout en bout, testé | ✔ |
-| M3 | `direction` | La console consolide, et tient quand un service se tait | ✔ |
-| M4 | `rh` | Un congé posé suit son circuit jusqu'au solde décompté | ✔ |
-| M5 | `finance` | Une dépense suit son circuit ; caisse, missions, achats | ✔ |
-| M6 | Front Board | Les quatre modules du siège sont utilisables | ✔ |
-| M7 | `daily` | Un chantier se suit au jour le jour | ✔ |
-| M8 | `planning` | Un planning de publication se tient | ✔ |
-| M9 | `orange` | La chaîne récolte → distribution est complète | ✔ |
-| M10 | `bdm` | Une campagne se pilote de la vente au versement de la prime | ✔ |
-
-| M11 | Recette de bout en bout | Les neuf services se reconnaissent, un congé traverse son circuit | ✔ |
-
-**FinanceRH reste en production sur rh.gdamali.net pendant toute la durée du
-chantier.** On lit son schéma et ses données ; on n'y touche pas. La bascule
-ne se décide qu'une fois GDA Hub éprouvé sur un domaine complet.
+| Etape | Etat |
+| ----- | ---- |
+| Socle : identity, jetons RS256, JWKS, habilitations | fait |
+| Passerelle nginx, un domaine | fait |
+| Annuaire (organisation) | fait |
+| FinanceRH sous `/rh/` | en cours |
+| Jus d'orange sous `/jus/` | a faire |
+| BDM sous `/bdm/` | a faire |
+| Retrait des modules reecrits | a faire |
+| Daily et Planning repris du stagiaire | a faire |
