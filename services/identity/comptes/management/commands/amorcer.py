@@ -28,6 +28,19 @@ BOARD = "Board"
 METIER = "Applications metier"
 ADMINISTRATION = "Administration"
 
+#: Le catalogue des applications, tel que le menu du hub l'affiche.
+#:
+#: **Chaque chemin mene a l'application reelle**, servie par la passerelle, et
+#: jamais a un ecran de la coquille. Le hub est une porte d'entree : il
+#: rassemble et il ouvre, il ne refait pas ce qui existe.
+#:
+#:   /rh/...    FinanceRH    (rh.gdamali.net en production)
+#:   /jus/      Jus d'orange (jus.gdamali.net)
+#:   /bdm/      BDM          (bdm.gdamali.net)
+#:
+#: FinanceRH porte a elle seule quatre entrees du menu : ce sont ses propres
+#: sections. Les separer ici donne au hub un menu par metier plutot que par
+#: application, sans rien dupliquer.
 APPLICATIONS = [
     # --- Board : le siege ------------------------------------------------
     {
@@ -36,7 +49,7 @@ APPLICATIONS = [
         "nom": "Organisation",
         "groupe": BOARD,
         "description": "Organigramme : agents, departements, rattachements.",
-        "chemin": "/organisation",
+        "chemin": "/rh/annuaire",
         "prefixe_api": "/api/organisation",
         "couleur": "#0f766e",
         "ordre": 10,
@@ -56,7 +69,7 @@ APPLICATIONS = [
         "nom": "Ressources humaines",
         "groupe": BOARD,
         "description": "Conges, permissions, retards, presences, formations.",
-        "chemin": "/ressources-humaines",
+        "chemin": "/rh/rh/absences",
         "prefixe_api": "/api/rh",
         "couleur": "#0369a1",
         "ordre": 11,
@@ -72,7 +85,7 @@ APPLICATIONS = [
         "nom": "Finance",
         "groupe": BOARD,
         "description": "Demandes d'engagement, depenses, caisse, budgets.",
-        "chemin": "/finance",
+        "chemin": "/rh/mes-demandes",
         "prefixe_api": "/api/finance",
         "couleur": "#047857",
         "ordre": 12,
@@ -88,7 +101,7 @@ APPLICATIONS = [
         "nom": "Direction",
         "groupe": BOARD,
         "description": "Regles de validation, decisions, tableau de bord consolide.",
-        "chemin": "/direction",
+        "chemin": "/rh/validations",
         "prefixe_api": "/api/direction",
         "couleur": "#4338ca",
         "ordre": 13,
@@ -104,7 +117,7 @@ APPLICATIONS = [
         "nom": "Campagnes",
         "groupe": METIER,
         "description": "Campagnes de cartes bancaires : ventes, enrolements, primes.",
-        "chemin": "/campagnes",
+        "chemin": "/bdm/",
         "prefixe_api": "/api/bdm",
         "couleur": "#1d4ed8",
         "ordre": 20,
@@ -121,7 +134,7 @@ APPLICATIONS = [
         "nom": "Jus d'Orange",
         "groupe": METIER,
         "description": "Recolte, fabrication, entrepot et distribution.",
-        "chemin": "/jus-orange",
+        "chemin": "/jus/",
         "prefixe_api": "/api/orange",
         "couleur": "#ea580c",
         "ordre": 21,
@@ -140,6 +153,10 @@ APPLICATIONS = [
         "groupe": METIER,
         "description": "Suivi de chantier : avancement, photos, rapport journalier.",
         "chemin": "/chantiers",
+        # Inactive tant que l'application reelle n'est pas rassemblee.
+        # Le travail du stagiaire doit d'abord etre repris et corrige ;
+        # d'ici la, une entree de menu ne menerait nulle part.
+        "active": False,
         "prefixe_api": "/api/daily",
         "couleur": "#b45309",
         "ordre": 22,
@@ -158,6 +175,10 @@ APPLICATIONS = [
         "groupe": METIER,
         "description": "Publications, tournages et rapports clients.",
         "chemin": "/planning",
+        # Inactive tant que l'application reelle n'est pas rassemblee.
+        # Le travail du stagiaire doit d'abord etre repris et corrige ;
+        # d'ici la, une entree de menu ne menerait nulle part.
+        "active": False,
         "prefixe_api": "/api/planning",
         "couleur": "#7c3aed",
         "ordre": 23,

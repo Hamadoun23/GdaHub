@@ -58,17 +58,33 @@ export function Coquille({ children }: { children: React.ReactNode }) {
                   />
                 ) : null}
                 {section.applications.map((application) => {
-                  const actif = chemin === application.chemin;
-                  return (
+                  const cible = application.chemin || "/tableau-de-bord";
+                  const actif = chemin === cible;
+                  const classe = `rounded-md px-3 py-1.5 transition ${
+                    actif
+                      ? "bg-ardoise-100 font-medium dark:bg-ardoise-700"
+                      : "text-ardoise-500 hover:bg-ardoise-100 dark:hover:bg-ardoise-700"
+                  }`;
+
+                  // Une application rassemblee n'appartient pas a cette
+                  // coquille : c'est un autre serveur, derriere la passerelle.
+                  // Un <Link> tenterait une navigation interne et tomberait
+                  // sur une page inexistante ; il faut une vraie sortie.
+                  return estExterieure(cible) ? (
+                    <a
+                      key={application.code}
+                      href={cible}
+                      title={section.titre || undefined}
+                      className={classe}
+                    >
+                      {application.nom}
+                    </a>
+                  ) : (
                     <Link
                       key={application.code}
-                      href={application.chemin || "/tableau-de-bord"}
+                      href={cible}
                       title={section.titre || undefined}
-                      className={`rounded-md px-3 py-1.5 transition ${
-                        actif
-                          ? "bg-ardoise-100 font-medium dark:bg-ardoise-700"
-                          : "text-ardoise-500 hover:bg-ardoise-100 dark:hover:bg-ardoise-700"
-                      }`}
+                      className={classe}
                     >
                       {application.nom}
                     </Link>
@@ -104,5 +120,21 @@ export function Coquille({ children }: { children: React.ReactNode }) {
 
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>
+  );
+}
+
+/**
+ * Les chemins qui ne sont pas servis par cette coquille.
+ *
+ * La passerelle monte chaque application rassemblee sous son prefixe. Ces
+ * adresses existent bien sur la meme origine, mais elles sortent du routeur
+ * de Next : elles se joignent par une navigation complete, pas par un lien
+ * interne.
+ */
+const PREFIXES_EXTERIEURS = ["/rh/", "/jus/", "/bdm/"];
+
+function estExterieure(chemin: string): boolean {
+  return PREFIXES_EXTERIEURS.some(
+    (prefixe) => chemin === prefixe.slice(0, -1) || chemin.startsWith(prefixe),
   );
 }
