@@ -26,19 +26,21 @@ services:
   # --- FinanceRH -----------------------------------------------------------
   # Servie sous /rh/. Sa base lui appartient : le hub n'y touche jamais.
   financerh-db:
-    image: supabase/postgres:17.6.1.136
+    # La meme image, le meme role et le meme nom de base qu'en production :
+    # une sauvegarde s'y restaure telle quelle, sans reecriture. Le compose de
+    # developpement de FinanceRH utilise l'image Supabase ; ici c'est la
+    # production qu'on reproduit, pas le poste du developpeur.
+    image: postgres:17-alpine
     container_name: gdahub-financerh-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: postgres
+      POSTGRES_USER: financerh
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
-      POSTGRES_PORT: 5432
-      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
-      JWT_EXP: 3600
+      POSTGRES_DB: financerh
     volumes:
       - donnees-financerh:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres -h 127.0.0.1"]
+      test: ["CMD-SHELL", "pg_isready -U financerh -d financerh"]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -57,7 +59,7 @@ services:
       DJANGO_DEBUG: "True"
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,gateway,financerh-api
       DJANGO_TIME_ZONE: Africa/Bamako
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-gdahub-local}@financerh-db:5432/postgres
+      DATABASE_URL: postgres://financerh:${POSTGRES_PASSWORD:-gdahub-local}@financerh-db:5432/financerh
       # Le rattachement au compte unique. Absente en production, cette
       # variable laisse FinanceRH avec sa seule connexion maison.
       GDAHUB_JWKS_URL: http://identity:8000/.well-known/jwks.json
@@ -92,6 +94,125 @@ services:
       - /app/.next
     ports: ["127.0.0.1:3110:3000"]
 
+  # --- Jus d'orange --------------------------------------------------------
+  # Servie sous /jus/. Meme forme que FinanceRH : un front Next, une API
+  # Django, sa propre base.
+  jusorange-db:
+    # 16, comme en production : c'est la version qui a produit les
+    # sauvegardes, et restaurer dans la meme evite les surprises.
+    image: postgres:16-alpine
+    container_name: gdahub-jusorange-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jusorange
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
+      POSTGRES_DB: jusorange
+    volumes:
+      - donnees-jusorange:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jusorange -d jusorange"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  jusorange-api:
+    build:
+      context: ../FinanceRH/DocsERP/Orange-full2/back
+    container_name: gdahub-jusorange-api
+    restart: unless-stopped
+    depends_on:
+      jusorange-db: {condition: service_healthy}
+      identity: {condition: service_started}
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-developpement-local-non-secret}
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,gateway,jusorange-api
+      DATABASE_URL: postgres://jusorange:${POSTGRES_PASSWORD:-gdahub-local}@jusorange-db:5432/jusorange
+      GDAHUB_JWKS_URL: http://identity:8000/.well-known/jwks.json
+      GDAHUB_JETON_EMETTEUR: gdahub-identity
+      GDAHUB_JETON_AUDIENCE: gdahub
+      # Les photos de prospection sont servies en adresse absolue.
+      MEDIA_URL: /jus/media/
+    volumes:
+      - ../FinanceRH/DocsERP/Orange-full2/back:/app
+      - media-jusorange:/app/media
+    ports: ["127.0.0.1:8120:8000"]
+
+  jusorange-web:
+    build:
+      context: ../FinanceRH/DocsERP/Orange-full2/front
+    container_name: gdahub-jusorange-web
+    restart: unless-stopped
+    depends_on: [jusorange-api]
+    environment:
+      NEXT_PUBLIC_CHEMIN_BASE: /jus
+      NEXT_PUBLIC_API_URL: /jus/api
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ../FinanceRH/DocsERP/Orange-full2/front:/app
+      - /app/node_modules
+      - /app/.next
+    ports: ["127.0.0.1:3120:3000"]
+
+  # --- BDM -----------------------------------------------------------------
+  # Servie sous /bdm/. Forme differente : Django sert lui-meme les pages React
+  # par Inertia, et l'identite tient dans une session, pas dans un jeton.
+  bdm-db:
+    image: mysql:8.0
+    container_name: gdahub-bdm-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
+      MYSQL_DATABASE: bdm
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - donnees-bdm-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  bdm-app:
+    build:
+      context: ../FinanceRH/DocsERP/BDM
+      dockerfile: backend/Dockerfile
+    container_name: gdahub-bdm-app
+    restart: unless-stopped
+    depends_on:
+      bdm-db: {condition: service_healthy}
+      identity: {condition: service_started}
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-developpement-local-non-secret}
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,gateway,bdm-app
+      DB_HOST: bdm-db
+      DB_PORT: "3306"
+      DB_NAME: bdm
+      DB_USER: root
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
+      # Django sert ses propres pages : il doit savoir sous quel chemin, sinon
+      # chaque redirection sortirait du perimetre de l'application.
+      CHEMIN_BASE: /bdm
+      # Sous une origine unique, deux Django qui posent « sessionid » se
+      # deconnecteraient mutuellement.
+      SESSION_COOKIE_NAME: bdm_sessionid
+      CSRF_COOKIE_NAME: bdm_csrftoken
+      GDAHUB_JWKS_URL: http://identity:8000/.well-known/jwks.json
+      GDAHUB_JETON_EMETTEUR: gdahub-identity
+      GDAHUB_JETON_AUDIENCE: gdahub
+    volumes:
+      - ../FinanceRH/DocsERP/BDM/backend:/app
+      - media-bdm-app:/app/media
+      - statiques-bdm:/app/staticfiles
+    ports: ["127.0.0.1:8130:8000"]
+
 volumes:
   donnees-financerh:
   media-financerh:
+  donnees-jusorange:
+  media-jusorange:
+  donnees-bdm-mysql:
+  media-bdm-app:
+  statiques-bdm:

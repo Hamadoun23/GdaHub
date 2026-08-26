@@ -6,6 +6,12 @@
 # du code. Seul l'exemple anonyme est publie.
 infra/effectif/personnel.json
 
+# Les sauvegardes de production. Elles portent les noms, les adresses et les
+# empreintes de mots de passe de tout le personnel : elles n'ont rien a faire
+# dans un depot, meme prive.
+infra/reprise/*.sql
+infra/reprise/*.sql.gz
+
 # Python
 __pycache__/
 *.py[cod]

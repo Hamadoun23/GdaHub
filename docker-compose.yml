@@ -374,7 +374,7 @@ services:
     # nginx resout les noms d'amont au demarrage et refuse de se lancer si
     # l'un manque : les applications rassemblees en font partie.
     depends_on: [identity, organisation, rh, finance, direction, bdm, orange, daily, planning, web,
-                 financerh-api, financerh-web]
+                 financerh-api, financerh-web, jusorange-api, jusorange-web, bdm-app]
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       # En lecture seule : la passerelle distribue les fichiers, elle n'en
@@ -383,6 +383,9 @@ services:
       - media-finance:/var/media/finance:ro
       - media-daily:/var/media/daily:ro
       - media-financerh:/var/media/financerh:ro
+      - media-jusorange:/var/media/jusorange:ro
+      - media-bdm-app:/var/media/bdm:ro
+      - statiques-bdm:/var/statiques/bdm:ro
     ports: ["127.0.0.1:8080:80"]
 
 volumes:
@@ -404,4 +407,7 @@ volumes:
   media-daily:
   media-planning:
   media-financerh:
+  media-jusorange:
+  media-bdm-app:
+  statiques-bdm:
   cles:

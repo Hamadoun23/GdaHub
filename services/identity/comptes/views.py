@@ -21,7 +21,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from comptes import jetons
+from comptes import cookie, jetons
 from comptes.models import (
     Application,
     Habilitation,
@@ -124,7 +124,11 @@ class Connexion(APIView):
         )
 
         couple = jetons.emettre(utilisateur, _adresse(requete), _agent(requete))
-        return Response({**couple, **_profil(utilisateur)})
+        # Le cookie porte le compte unique jusqu'aux applications rassemblees,
+        # qui ne savent pas aller chercher un jeton chez le hub.
+        return cookie.poser(
+            Response({**couple, **_profil(utilisateur)}), couple["acces"]
+        )
 
     def _echec(self, requete, identifiant, utilisateur, motif):
         JournalConnexion.objects.create(
@@ -202,11 +206,12 @@ class Rafraichir(APIView):
 
         # Les habilitations sont relues en base : c'est le moment ou un droit
         # accorde ou retire entre reellement en vigueur.
-        return Response(
-            {
-                "acces": jetons.emettre_acces(session.utilisateur),
-                **_profil(session.utilisateur),
-            }
+        acces = jetons.emettre_acces(session.utilisateur)
+        # Le cookie est repose : sans cela, il expirerait avant la session et
+        # les applications rassemblees se fermeraient au bout de quinze
+        # minutes, alors que le shell, lui, continuerait de fonctionner.
+        return cookie.poser(
+            Response({"acces": acces, **_profil(session.utilisateur)}), acces
         )
 
     def _refus(self, message):
@@ -232,12 +237,14 @@ class Deconnexion(APIView):
         except jwt.InvalidTokenError:
             # Un jeton illisible est deja sans effet : on repond comme si la
             # deconnexion avait eu lieu, pour ne rien apprendre a l'appelant.
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            # Le cookie part quand meme : se deconnecter doit toujours fermer
+            # l'acces aux applications, meme quand le jeton fourni ne vaut rien.
+            return cookie.retirer(Response(status=status.HTTP_204_NO_CONTENT))
 
         session = SessionJeton.objects.filter(identifiant_jeton=charge["jti"]).first()
         if session:
             session.revoquer()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return cookie.retirer(Response(status=status.HTTP_204_NO_CONTENT))
 
 
 class MonCompte(APIView):
