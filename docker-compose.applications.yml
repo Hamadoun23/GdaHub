@@ -118,6 +118,7 @@ services:
   jusorange-api:
     build:
       context: ../FinanceRH/DocsERP/Orange-full2/back
+      target: developpement
     container_name: gdahub-jusorange-api
     restart: unless-stopped
     depends_on:
@@ -141,6 +142,7 @@ services:
   jusorange-web:
     build:
       context: ../FinanceRH/DocsERP/Orange-full2/front
+      target: developpement
     container_name: gdahub-jusorange-web
     restart: unless-stopped
     depends_on: [jusorange-api]

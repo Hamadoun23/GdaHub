@@ -377,6 +377,7 @@ services:
                  financerh-api, financerh-web, jusorange-api, jusorange-web, bdm-app]
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./gateway/entetes-proxy.conf:/etc/nginx/entetes-proxy.conf:ro
       # En lecture seule : la passerelle distribue les fichiers, elle n'en
       # ecrit aucun.
       - media-rh:/var/media/rh:ro
