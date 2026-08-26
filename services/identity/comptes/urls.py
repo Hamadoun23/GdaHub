@@ -5,7 +5,10 @@ from rest_framework.routers import DefaultRouter
 
 from comptes import views
 
-routeur = DefaultRouter()
+# Pas de barre oblique finale : les routes ecrites a la main n'en ont pas
+# (« /auth/connexion », « /tableau-de-bord »), et melanger les deux
+# conventions ferait echouer un POST sur redirection.
+routeur = DefaultRouter(trailing_slash=False)
 routeur.register("utilisateurs", views.UtilisateurViewSet, basename="utilisateur")
 routeur.register("applications", views.ApplicationViewSet, basename="application")
 routeur.register("habilitations", views.HabilitationViewSet, basename="habilitation")

@@ -68,6 +68,24 @@ def contexte_du_demandeur(utilisateur, forcer=False) -> dict:
     return contexte
 
 
+def contexte_facultatif(utilisateur) -> dict | None:
+    """Le meme contexte, mais sans faire echouer l'appelant.
+
+    Un ecran de consultation — tableau de bord, compteur — doit s'afficher
+    meme pour quelqu'un qui n'a pas de fiche d'agent : c'est le cas du
+    responsable informatique, qui administre l'ERP sans y poser de conges.
+    Refuser d'afficher la page lui apprendrait seulement que l'application est
+    cassee.
+
+    Le depot d'un document, lui, reste strict : sans demandeur identifie, un
+    dossier ne remonte a personne.
+    """
+    try:
+        return contexte_du_demandeur(utilisateur)
+    except ValidationError:
+        return None
+
+
 def oublier(utilisateur) -> None:
     """A appeler quand un rattachement vient de changer."""
     cache.delete(f"gdahub:contexte:{utilisateur.identifiant}")

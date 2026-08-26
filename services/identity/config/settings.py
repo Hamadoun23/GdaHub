@@ -11,6 +11,7 @@ from pathlib import Path
 from gdahub_common.reglages import *  # noqa: F403
 from gdahub_common.reglages import (
     INSTALLED_APPS,
+    _liste,
     MIDDLEWARE,
     REST_FRAMEWORK,
     TEMPLATES,
@@ -49,6 +50,14 @@ TEMPLATES[0]["OPTIONS"]["context_processors"] = [
 
 AUTH_USER_MODEL = "comptes.Utilisateur"
 
+# L'administration Django est servie derriere la passerelle : Django doit
+# reconnaitre l'origine du navigateur, port compris, sans quoi la connexion
+# est refusee au titre de la protection CSRF.
+CSRF_TRUSTED_ORIGINS = _liste(  # noqa: F405
+    "DJANGO_ORIGINES_SURES",
+    "http://localhost:8080,http://127.0.0.1:8080,http://localhost:8101",
+)
+
 MEDIA_ROOT = BASE_DIR / "media"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -63,7 +72,9 @@ GDAHUB_DUREE_RAFRAICHISSEMENT = int(
     os.environ.get("GDAHUB_DUREE_RAFRAICHISSEMENT", "604800")
 )  # 7 jours
 
-# Identity verifie ses propres jetons localement, sans passer par le reseau.
+# Identity verifie ses propres jetons avec sa cle privee, sans appel reseau :
+# la classe ci-dessous remplace celle du socle. L'URL reste declaree pour les
+# outils qui la lisent, mais ce service ne s'en sert pas.
 GDAHUB_JWKS_URL = os.environ.get(
     "GDAHUB_JWKS_URL", "http://localhost:8000/.well-known/jwks.json"
 )
@@ -100,4 +111,12 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "connexion": os.environ.get("GDAHUB_LIMITE_CONNEXION", "10/min")
     },
+}
+
+# Identity possede la cle : il n'a pas a la demander a lui-meme par HTTP.
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "comptes.authentification.AuthentificationLocale"
+    ],
 }

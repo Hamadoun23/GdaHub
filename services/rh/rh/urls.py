@@ -6,7 +6,10 @@ from rest_framework.routers import DefaultRouter
 
 from rh import views
 
-routeur = DefaultRouter()
+# Pas de barre oblique finale : les routes ecrites a la main n'en ont pas
+# (« /auth/connexion », « /tableau-de-bord »), et melanger les deux
+# conventions ferait echouer un POST sur redirection.
+routeur = DefaultRouter(trailing_slash=False)
 routeur.register("demandes-absence", views.DemandeAbsenceViewSet, basename="demande-absence")
 routeur.register("types-absence", views.TypeAbsenceViewSet, basename="type-absence")
 routeur.register("soldes-conges", views.SoldeCongeViewSet, basename="solde-conge")

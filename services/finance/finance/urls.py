@@ -6,7 +6,10 @@ from rest_framework.routers import DefaultRouter
 
 from finance import views
 
-routeur = DefaultRouter()
+# Pas de barre oblique finale : les routes ecrites a la main n'en ont pas
+# (« /auth/connexion », « /tableau-de-bord »), et melanger les deux
+# conventions ferait echouer un POST sur redirection.
+routeur = DefaultRouter(trailing_slash=False)
 # Referentiels
 routeur.register("fournisseurs", views.FournisseurViewSet, basename="fournisseur")
 routeur.register("categories", views.CategorieDepenseViewSet, basename="categorie")

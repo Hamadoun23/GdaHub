@@ -1,0 +1,27 @@
+# Les conteneurs tournent sous Linux ; Windows, lui, convertit les fins de
+# ligne au moment du clone quand `core.autocrlf` est actif. Un `entrypoint.sh`
+# en CRLF donne « bad interpreter » et aucun service ne demarre — la panne est
+# d'autant plus deroutante que le fichier parait correct dans l'editeur.
+#
+# On fige donc en LF tout ce qui est lu par Linux ou par un outil.
+
+* text=auto eol=lf
+
+*.sh            text eol=lf
+*.py            text eol=lf
+*.ts            text eol=lf
+*.tsx           text eol=lf
+*.css           text eol=lf
+*.json          text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.conf          text eol=lf
+*.md            text eol=lf
+Dockerfile      text eol=lf
+.env.example    text eol=lf
+
+# Binaires : aucune conversion.
+*.png           binary
+*.jpg           binary
+*.pdf           binary
+*.woff2         binary

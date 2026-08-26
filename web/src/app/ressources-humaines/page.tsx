@@ -41,11 +41,10 @@ import {
 import { aujourdhui, date, heure, nombre } from "@/lib/format";
 import { useAction, useListe, useRessource } from "@/lib/ressources";
 import { useSession } from "@/lib/session";
-import type {
-  DemandeAbsence,
-  SoldeConge,
-  TypeAbsence,
-} from "@/lib/types";
+import type { DemandeAbsence, SoldeConge, TypeAbsence } from "@/lib/types";
+
+/** Le solde renvoyé pour un compte sans fiche d'agent porte ce drapeau. */
+type SoldeEventuel = SoldeConge & { sans_fiche?: boolean };
 
 type Onglet = "conges" | "permissions" | "retards" | "a-valider";
 
@@ -111,7 +110,7 @@ function Contenu() {
 
   const demandes = useListe<DemandeAbsence>(chemin);
   const aValider = useListe<DemandeAbsence>("/rh/demandes-absence/a-valider");
-  const solde = useRessource<SoldeConge>("/rh/soldes-conges/mon-solde");
+  const solde = useRessource<SoldeEventuel>("/rh/soldes-conges/mon-solde");
   const types = useListe<TypeAbsence>("/rh/types-absence?actif=true&taille=100");
 
   const rafraichir = () => {
@@ -166,6 +165,17 @@ function Contenu() {
           ) : null
         }
       />
+
+      {solde.donnees?.sans_fiche ? (
+        <div className="mb-6">
+          <Alerte ton="avertissement" titre="Aucune fiche d'agent">
+            Votre compte n&apos;est rattaché à aucune fiche dans
+            l&apos;organigramme. Vous pouvez consulter les écrans, mais vous ne
+            pourrez pas déposer de demande tant que les Ressources humaines ne
+            vous auront pas inscrit à l&apos;annuaire.
+          </Alerte>
+        </div>
+      ) : null}
 
       <div className="mb-6">
         <Grille colonnes={3}>

@@ -1,13 +1,12 @@
 #!/bin/sh
 # Demarrage du service rh en developpement.
 #
-# `makemigrations` figure ici tant que le schema du domaine bouge a chaque
-# seance. A remplacer par des migrations versionnees avant toute mise en
-# service : une image de production ne genere pas son schema au demarrage.
+# Les migrations sont versionnees dans le depot : le demarrage se contente
+# de les appliquer. Une image de production ne genere pas son schema, et un
+# `makemigrations` au demarrage masquerait un modele modifie sans migration.
 set -e
 
 echo "[rh] migrations"
-python manage.py makemigrations rh --noinput
 python manage.py migrate --noinput
 
 echo "[rh] referentiels"

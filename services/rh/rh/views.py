@@ -109,8 +109,25 @@ class SoldeCongeViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="mon-solde")
     def mon_solde(self, requete):
-        """Le solde de l'annee en cours, cree au besoin."""
-        contexte = annuaire.contexte_du_demandeur(requete.user)
+        """Le solde de l'annee en cours, cree au besoin.
+
+        Sans fiche d'agent — un administrateur, un compte de service — on
+        renvoie un solde vide plutot qu'une erreur : l'ecran doit s'afficher.
+        """
+        contexte = annuaire.contexte_facultatif(requete.user)
+        if contexte is None:
+            return Response(
+                {
+                    "agent_identifiant": requete.user.identifiant,
+                    "agent_nom": requete.user.nom_complet,
+                    "annee": timezone.localdate().year,
+                    "jours_acquis": "0.0",
+                    "jours_reportes": "0.0",
+                    "jours_pris": "0.0",
+                    "jours_restants": "0.0",
+                    "sans_fiche": True,
+                }
+            )
         solde = services.solde_de(
             requete.user.identifiant, timezone.localdate().year, contexte
         )
@@ -277,11 +294,16 @@ class TableauDeBord(APIView):
             demandeur_identifiant=utilisateur.identifiant
         )
 
-        contexte = annuaire.contexte_du_demandeur(utilisateur)
-        solde = services.solde_de(utilisateur.identifiant, annee, contexte)
+        contexte = annuaire.contexte_facultatif(utilisateur)
+        solde = (
+            services.solde_de(utilisateur.identifiant, annee, contexte)
+            if contexte
+            else None
+        )
 
         donnees = {
-            "solde": SoldeCongeSerializer(solde).data,
+            "solde": SoldeCongeSerializer(solde).data if solde else None,
+            "sans_fiche": contexte is None,
             "mes_demandes_en_cours": mes_demandes.filter(
                 statut=StatutDocument.EN_VALIDATION
             ).count(),

@@ -5,7 +5,10 @@ from rest_framework.routers import DefaultRouter
 
 from campagnes import views
 
-routeur = DefaultRouter()
+# Pas de barre oblique finale : les routes ecrites a la main n'en ont pas
+# (« /auth/connexion », « /tableau-de-bord »), et melanger les deux
+# conventions ferait echouer un POST sur redirection.
+routeur = DefaultRouter(trailing_slash=False)
 # Referentiels
 routeur.register("partenaires", views.PartenaireViewSet, basename="partenaire")
 routeur.register("agences", views.AgenceViewSet, basename="agence")

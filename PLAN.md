@@ -127,6 +127,8 @@ Un shell Next.js unique, un module par service, la même grammaire partout :
 | M9 | `orange` | La chaîne récolte → distribution est complète | ✔ |
 | M10 | `bdm` | Une campagne se pilote de la vente au versement de la prime | ✔ |
 
+| M11 | Recette de bout en bout | Les neuf services se reconnaissent, un congé traverse son circuit | ✔ |
+
 **FinanceRH reste en production sur rh.gdamali.net pendant toute la durée du
 chantier.** On lit son schéma et ses données ; on n'y touche pas. La bascule
 ne se décide qu'une fois GDA Hub éprouvé sur un domaine complet.

@@ -5,7 +5,10 @@ from rest_framework.routers import DefaultRouter
 
 from jusorange import views
 
-routeur = DefaultRouter()
+# Pas de barre oblique finale : les routes ecrites a la main n'en ont pas
+# (« /auth/connexion », « /tableau-de-bord »), et melanger les deux
+# conventions ferait echouer un POST sur redirection.
+routeur = DefaultRouter(trailing_slash=False)
 # Recolte
 routeur.register("producteurs", views.ProducteurViewSet, basename="producteur")
 routeur.register("cueillettes", views.CueilletteViewSet, basename="cueillette")

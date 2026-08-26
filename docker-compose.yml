@@ -215,6 +215,11 @@ services:
       - ./services/rh:/app
       - ./libs/gdahub_common:/libs/gdahub_common
       - media-rh:/app/media
+      # Les circuits nomment des postes cles — directeur general, directeur
+      # des operations — et le fichier d'effectif dit qui les occupe. Sans ce
+      # montage, ces etapes retombent sur le role et deux valideurs distincts
+      # se confondent en un seul.
+      - ./infra/effectif:/effectif:ro
     ports: ["127.0.0.1:8107:8000"]
 
   finance:
@@ -235,6 +240,11 @@ services:
       - ./services/finance:/app
       - ./libs/gdahub_common:/libs/gdahub_common
       - media-finance:/app/media
+      # Les circuits nomment des postes cles — directeur general, directeur
+      # des operations — et le fichier d'effectif dit qui les occupe. Sans ce
+      # montage, ces etapes retombent sur le role et deux valideurs distincts
+      # se confondent en un seul.
+      - ./infra/effectif:/effectif:ro
     ports: ["127.0.0.1:8108:8000"]
 
   direction:

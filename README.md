@@ -254,12 +254,12 @@ en parallèle et ne prend le relais que lorsqu'il a fait ses preuves.
 
 ## 8. Avant toute mise en service
 
-Deux dettes assumées pendant l'amorçage, à solder avant de sortir du poste de
-développement :
-
-- **Les migrations sont générées au démarrage** (`makemigrations` dans les
-  `entrypoint.sh`). C'est confortable tant que le schéma bouge à chaque séance ;
-  une image de production ne génère pas son schéma. À remplacer par des
-  migrations versionnées dès que les domaines existent.
-- **Le mot de passe du super administrateur** vaut `admin` par défaut. Il n'a
-  aucune raison de survivre à la première connexion.
+- **Le mot de passe du super administrateur** vaut `admin` par défaut, et les
+  comptes importés de l'effectif reçoivent `12345`. Ni l'un ni l'autre n'a de
+  raison de survivre à la première connexion.
+- **`runserver` n'est pas un serveur de production.** Les `Dockerfile` portent
+  déjà une cible `production` sous gunicorn ; il reste à écrire le
+  `docker-compose.prod.yml` qui l'utilise, sur le modèle de FinanceRH.
+- **Le fichier d'effectif réel** (`infra/effectif/personnel.json`) n'est pas
+  versionné. Sans lui, l'ERP s'amorce sur le jeu anonyme — visible au premier
+  démarrage, qui l'annonce explicitement.
