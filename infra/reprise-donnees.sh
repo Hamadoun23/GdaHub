@@ -19,7 +19,7 @@ set -e
 
 racine=$(cd "$(dirname "$0")/.." && pwd)
 reprise="$racine/infra/reprise"
-docs="$racine/../FinanceRH/DocsERP"
+docs="$racine/infra/reprise"
 mdp=${POSTGRES_PASSWORD:-gdahub-local}
 
 vert()  { printf '  ok    %s\n' "$1"; }
@@ -44,36 +44,36 @@ attendre() {
 
 titre "FinanceRH"
 if [ -f "$reprise/financerh_prod.sql.gz" ]; then
-    attendre financerh-db 'pg_isready -U financerh -d financerh'
+    attendre db-financerh 'pg_isready -U financerh -d financerh'
     gzip -dc "$reprise/financerh_prod.sql.gz" |
-        docker compose exec -T financerh-db psql -U financerh -d financerh -q
+        docker compose exec -T db-financerh psql -U financerh -d financerh -q
     vert 'base restauree'
 else
     rouge "sauvegarde absente : $reprise/financerh_prod.sql.gz"
 fi
 
 titre "Jus d'orange"
-sauvegarde=$(ls -t "$docs"/Orange-full2/jusorange_prod_*.sql 2>/dev/null | head -1)
+sauvegarde=$(ls -t "$docs"/jusorange_prod_*.sql 2>/dev/null | head -1)
 if [ -n "$sauvegarde" ]; then
-    attendre jusorange-db 'pg_isready -U jusorange -d jusorange'
+    attendre db-jusorange 'pg_isready -U jusorange -d jusorange'
     # Les directives de restriction, posees par pg_dump 16, ne sont comprises
     # que par psql 16 et plus. On les retire : elles n'apportent rien ici.
     sed -e '/^.restrict /d' -e '/^.unrestrict /d' "$sauvegarde" |
-        docker compose exec -T jusorange-db psql -U jusorange -d jusorange -q
+        docker compose exec -T db-jusorange psql -U jusorange -d jusorange -q
     vert "base restauree depuis $(basename "$sauvegarde")"
 else
-    rouge "aucune sauvegarde jusorange_prod_*.sql dans $docs/Orange-full2"
+    rouge "aucune sauvegarde jusorange_prod_*.sql dans $docs"
 fi
 
 titre "BDM"
-sauvegarde=$(ls -t "$docs"/BDM/bdm_prod_*.sql 2>/dev/null | head -1)
+sauvegarde=$(ls -t "$docs"/bdm_prod_*.sql 2>/dev/null | head -1)
 if [ -n "$sauvegarde" ]; then
-    attendre bdm-db 'mysqladmin ping -h 127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD"'
-    docker compose exec -T bdm-db mysql -uroot -p"$mdp" -e 'DROP DATABASE IF EXISTS bdm; CREATE DATABASE bdm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
-    docker compose exec -T bdm-db mysql -uroot -p"$mdp" bdm < "$sauvegarde"
+    attendre db-bdm 'mysqladmin ping -h 127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD"'
+    docker compose exec -T db-bdm mysql -uroot -p"$mdp" -e 'DROP DATABASE IF EXISTS bdm; CREATE DATABASE bdm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
+    docker compose exec -T db-bdm mysql -uroot -p"$mdp" bdm < "$sauvegarde"
     vert "base restauree depuis $(basename "$sauvegarde")"
 else
-    rouge "aucune sauvegarde bdm_prod_*.sql dans $docs/BDM"
+    rouge "aucune sauvegarde bdm_prod_*.sql dans $docs"
 fi
 
 titre 'Termine'
