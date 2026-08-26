@@ -194,7 +194,12 @@ services:
     restart: unless-stopped
     environment:
       # Chaque application parle a son propre backend, par la passerelle.
-      NEXT_PUBLIC_BASE_API: /api/identity
+      #
+      # Le socle du hub ajoute lui-meme « /identity » a ses chemins : la
+      # racine s'arrete donc a « /api ». L'y mettre deux fois donnait
+      # « /api/identity/identity/auth/connexion », et la connexion tombait sur
+      # « service d'authentification injoignable ».
+      NEXT_PUBLIC_BASE_API: /api
       NEXT_PUBLIC_API_RH: /api/rh
       NEXT_PUBLIC_API_JUS: /api/jus
       WATCHPACK_POLLING: "true"
