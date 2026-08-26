@@ -31,9 +31,12 @@ import {
   Statistique,
   ZoneTexte,
 } from "@/composants/ui";
+import { GestionRessource } from "@/composants/ressource";
 import { aujourdhui, date } from "@/lib/format";
 import { useAction, useListe, useRessource } from "@/lib/ressources";
 import { useSession } from "@/lib/session";
+
+import * as sections from "./sections";
 
 type Client = {
   id: number;
@@ -105,14 +108,16 @@ export default function PagePlanning() {
 
 function Contenu() {
   const { profil } = useSession();
-  const [onglet, setOnglet] = useState<"calendrier" | "retards" | "clients">(
-    "calendrier",
-  );
+  const [onglet, setOnglet] = useState<
+    "calendrier" | "retards" | "echeances" | "idees" | "clients" | "bilans"
+  >("calendrier");
   const maintenant = new Date();
   const [mois, setMois] = useState(maintenant.getMonth() + 1);
   const [annee, setAnnee] = useState(maintenant.getFullYear());
   const [selection, setSelection] = useState<Echeance | null>(null);
   const [nouvelle, setNouvelle] = useState<"tournage" | "publication" | null>(null);
+  // Un bilan construit n'apparait pas tout seul dans la liste : on la remonte.
+  const [bilans, setBilans] = useState(0);
 
   const roles = profil?.habilitations.planning ?? [];
   const estEquipe = roles.includes("admin") || roles.includes("team");
@@ -181,7 +186,10 @@ function Contenu() {
               (tableau.donnees?.tournages_en_retard ?? 0) +
               (tableau.donnees?.publications_en_retard ?? 0),
           },
+          { cle: "echeances" as const, libelle: "Échéances" },
+          { cle: "idees" as const, libelle: "Idées" },
           { cle: "clients" as const, libelle: "Clients" },
+          { cle: "bilans" as const, libelle: "Bilans" },
         ]}
         actif={onglet}
         onChange={setOnglet}
@@ -287,33 +295,32 @@ function Contenu() {
         </div>
       ) : null}
 
+      {onglet === "echeances" ? (
+        <div className="space-y-6">
+          <GestionRessource spec={sections.tournages(estEquipe)} />
+          <GestionRessource spec={sections.publications(estEquipe)} />
+        </div>
+      ) : null}
+
+      {onglet === "idees" ? <GestionRessource spec={sections.idees(estEquipe)} /> : null}
+
       {onglet === "clients" ? (
-        <Carte sansPadding>
-          <div className="px-4 sm:px-5">
-            {clients.chargement ? (
-              <Chargement />
-            ) : !clients.donnees?.length ? (
-              <EtatVide titre="Aucun client" />
-            ) : (
-              <ListeLignes>
-                {clients.donnees.map((client) => (
-                  <LigneListe
-                    key={client.id}
-                    titre={client.nom_entreprise}
-                    detail={
-                      client.regles.length
-                        ? `Jours peu porteurs : ${client.regles.map((regle) => regle.jour_libelle).join(", ")}`
-                        : "Aucun jour déconseillé"
-                    }
-                    statut={
-                      client.actif ? null : <Badge ton="neutre">Inactif</Badge>
-                    }
-                  />
-                ))}
-              </ListeLignes>
-            )}
-          </div>
-        </Carte>
+        <div className="space-y-6">
+          <GestionRessource spec={sections.clients(estEquipe)} />
+          <GestionRessource spec={sections.regles(estEquipe)} />
+        </div>
+      ) : null}
+
+      {onglet === "bilans" ? (
+        <div className="space-y-6">
+          {estEquipe ? (
+            <ConstruireBilan
+              clients={clients.donnees ?? []}
+              onConstruit={() => setBilans((tour) => tour + 1)}
+            />
+          ) : null}
+          <GestionRessource key={bilans} spec={sections.rapports()} />
+        </div>
       ) : null}
 
       <Modale
@@ -500,5 +507,91 @@ function FormulaireEcheance({
         </div>
       </form>
     </Modale>
+  );
+}
+
+/**
+ * La construction d'un bilan mensuel.
+ *
+ * Écrite à la main parce que ce n'est pas une création d'enregistrement : le
+ * serveur relit le mois et fige les chiffres. Reconstruire plus tard donnerait
+ * d'autres nombres, d'où le choix explicite du mois et de l'année.
+ */
+function ConstruireBilan({
+  clients,
+  onConstruit,
+}: {
+  clients: Client[];
+  onConstruit: () => void;
+}) {
+  const { requete } = useSession();
+  const action = useAction();
+  const maintenant = new Date();
+  const [client, setClient] = useState(clients[0] ? String(clients[0].id) : "");
+  const [mois, setMois] = useState(String(maintenant.getMonth() + 1));
+  const [annee, setAnnee] = useState(String(maintenant.getFullYear()));
+  const [fait, setFait] = useState(false);
+
+  const envoyer = async (evenement: React.FormEvent) => {
+    evenement.preventDefault();
+    setFait(false);
+    const succes = await action.executer(() =>
+      requete("/planning/rapports/construire", {
+        methode: "POST",
+        corps: { client: Number(client), mois: Number(mois), annee: Number(annee) },
+      }),
+    );
+    if (succes) {
+      setFait(true);
+      onConstruit();
+    }
+  };
+
+  return (
+    <Carte titre="Construire un bilan">
+      <form onSubmit={envoyer} className="space-y-4">
+        {action.erreur ? <Alerte>{action.erreur}</Alerte> : null}
+        {fait ? <Alerte ton="info">Le bilan a été figé.</Alerte> : null}
+
+        <div className="grid gap-4 sm:grid-cols-4">
+          <div className="sm:col-span-2">
+            <Selection
+              libelle="Client"
+              value={client}
+              onChange={(evenement) => setClient(evenement.target.value)}
+              options={clients.map((candidat) => ({
+                valeur: candidat.id,
+                libelle: candidat.nom_entreprise,
+              }))}
+              erreurs={action.champs.client}
+            />
+          </div>
+          <Champ
+            libelle="Mois"
+            type="number"
+            min="1"
+            max="12"
+            value={mois}
+            onChange={(evenement) => setMois(evenement.target.value)}
+            required
+          />
+          <Champ
+            libelle="Année"
+            type="number"
+            min="2020"
+            max="2100"
+            value={annee}
+            onChange={(evenement) => setAnnee(evenement.target.value)}
+            required
+          />
+        </div>
+
+        <div className="flex justify-end">
+          <Bouton type="submit" chargement={action.enCours} disabled={!client}>
+            Construire
+          </Bouton>
+        </div>
+      </form>
+    </Carte>
   );
 }

@@ -4,13 +4,18 @@
  * Module Campagnes.
  *
  * Deux publics sur le même écran. Le commercial y saisit ses ventes et suit
- * son classement ; l'administration y pilote les campagnes et déclenche les
- * primes. Ce que chacun voit dépend de son rôle, pas d'un onglet caché.
+ * son classement ; l'administration y pilote les campagnes, les référentiels
+ * et les primes. Ce que chacun voit dépend de son rôle, pas d'un onglet caché.
+ *
+ * Les onglets reprennent le découpage de l'application d'origine : le terrain
+ * d'abord — c'est ce qu'un commercial ouvre quinze fois par jour — puis le
+ * pilotage, puis les référentiels.
  */
 
 import { useState } from "react";
 
 import { Coquille } from "@/composants/Coquille";
+import { GestionRessource } from "@/composants/ressource";
 import {
   Alerte,
   Badge,
@@ -32,10 +37,13 @@ import { date, dateHeure, montant } from "@/lib/format";
 import { useAction, useListe, useRessource } from "@/lib/ressources";
 import { useSession } from "@/lib/session";
 
+import * as sections from "./sections";
+
+type Onglet = "terrain" | "pilotage" | "classement" | "referentiels";
+
 type Campagne = {
   id: number;
   nom: string;
-  partenaire: number | null;
   partenaire_nom: string;
   date_debut: string;
   date_fin: string;
@@ -58,12 +66,11 @@ type Vente = {
   cree_le: string;
 };
 
-type TypeCarte = { id: number; code: string; libelle: string; partenaire: number | null };
+type TypeCarte = { id: number; code: string; libelle: string };
 
 type LigneClassement = {
   rang: number;
   commercial_id: number;
-  identifiant: string;
   nom_complet: string;
   agence: string;
   ventes: number;
@@ -88,22 +95,21 @@ export default function PageCampagnes() {
 
 function Contenu() {
   const { profil } = useSession();
-  const [onglet, setOnglet] = useState<"ventes" | "campagnes" | "classement">(
-    "ventes",
-  );
+  const [onglet, setOnglet] = useState<Onglet>("terrain");
   const [campagneChoisie, setCampagneChoisie] = useState<number | null>(null);
   const [saisie, setSaisie] = useState(false);
 
   const roles = profil?.habilitations.bdm ?? [];
-  const pilote = roles.includes("admin") || roles.includes("direction");
+  const pilote =
+    Boolean(profil?.utilisateur.est_superadmin) ||
+    roles.includes("admin") ||
+    roles.includes("direction");
 
   const tableau = useRessource<TableauCampagnes>("/bdm/tableau-de-bord");
   const ouvertes = useListe<Campagne>("/bdm/campagnes/ouvertes");
-  const toutes = useListe<Campagne>(
-    onglet === "campagnes" ? "/bdm/campagnes?taille=100" : null,
-  );
+  const toutes = useListe<Campagne>("/bdm/campagnes?taille=100");
   const ventes = useListe<Vente>(
-    onglet === "ventes" ? "/bdm/ventes?taille=100" : null,
+    onglet === "terrain" ? "/bdm/ventes?taille=100" : null,
   );
   const types = useListe<TypeCarte>("/bdm/types-cartes?actif=true&taille=100");
   const classement = useListe<LigneClassement>(
@@ -118,7 +124,7 @@ function Contenu() {
     <>
       <EnTetePage
         titre="Campagnes"
-        description="Ventes de cartes, enrôlements et primes."
+        description="Ventes de cartes, enrôlements, contrats et primes."
         actions={
           ouvertes.donnees?.length ? (
             <Bouton onClick={() => setSaisie(true)}>Enregistrer une vente</Bouton>
@@ -136,196 +142,193 @@ function Contenu() {
       ) : null}
 
       <div className="mb-6">
-        <Grille colonnes={4}>
-          <Statistique
-            libelle="Campagnes ouvertes"
-            valeur={chiffres?.campagnes_ouvertes ?? 0}
-          />
-          <Statistique libelle="Mes ventes" valeur={chiffres?.mes_ventes ?? 0} />
-          <Statistique
-            libelle="Aujourd'hui"
-            valeur={chiffres?.mes_ventes_du_jour ?? 0}
-            ton={chiffres?.mes_ventes_du_jour ? "succes" : "neutre"}
-          />
-          <Statistique
-            libelle="Réclamations ouvertes"
-            valeur={chiffres?.reclamations_ouvertes ?? 0}
-            ton={chiffres?.reclamations_ouvertes ? "alerte" : "succes"}
-          />
-        </Grille>
+        {tableau.chargement ? (
+          <Chargement />
+        ) : (
+          <Grille colonnes={4}>
+            <Statistique
+              libelle="Campagnes ouvertes"
+              valeur={chiffres?.campagnes_ouvertes ?? 0}
+            />
+            <Statistique libelle="Mes ventes" valeur={chiffres?.mes_ventes ?? 0} />
+            <Statistique
+              libelle="Aujourd'hui"
+              valeur={chiffres?.mes_ventes_du_jour ?? 0}
+              ton={chiffres?.mes_ventes_du_jour ? "succes" : "neutre"}
+            />
+            <Statistique
+              libelle="Réclamations ouvertes"
+              valeur={chiffres?.reclamations_ouvertes ?? 0}
+              ton={chiffres?.reclamations_ouvertes ? "alerte" : "succes"}
+            />
+          </Grille>
+        )}
       </div>
 
       <Onglets
         onglets={[
-          { cle: "ventes" as const, libelle: "Mes ventes" },
-          { cle: "campagnes" as const, libelle: "Campagnes" },
-          { cle: "classement" as const, libelle: "Classement" },
+          { cle: "terrain" as Onglet, libelle: "Terrain" },
+          { cle: "pilotage" as Onglet, libelle: "Pilotage" },
+          { cle: "classement" as Onglet, libelle: "Classement" },
+          { cle: "referentiels" as Onglet, libelle: "Référentiels" },
         ]}
         actif={onglet}
         onChange={setOnglet}
       />
 
-      {onglet === "ventes" ? (
-        <Carte sansPadding>
-          <div className="px-4 sm:px-5">
-            {ventes.chargement ? (
-              <Chargement />
-            ) : ventes.erreur ? (
-              <div className="py-5">
-                <Alerte>{ventes.erreur}</Alerte>
+      <div className="space-y-6">
+        {onglet === "terrain" ? (
+          <>
+            <Carte
+              titre="Mes ventes"
+              sousTitre="Une saisie se corrige pendant 48 heures, puis elle se fige."
+              sansPadding
+            >
+              <div className="px-4 sm:px-5">
+                {ventes.chargement ? (
+                  <Chargement />
+                ) : ventes.erreur ? (
+                  <div className="py-5">
+                    <Alerte>{ventes.erreur}</Alerte>
+                  </div>
+                ) : !ventes.donnees?.length ? (
+                  <EtatVide
+                    titre="Aucune vente"
+                    description="Vos ventes apparaîtront ici."
+                    action={
+                      ouvertes.donnees?.length ? (
+                        <Bouton taille="petite" onClick={() => setSaisie(true)}>
+                          Enregistrer une vente
+                        </Bouton>
+                      ) : null
+                    }
+                  />
+                ) : (
+                  <ListeLignes>
+                    {ventes.donnees.map((vente) => (
+                      <LigneListe
+                        key={vente.id}
+                        titre={`${vente.client_nom} — ${vente.type_carte_libelle}`}
+                        detail={
+                          <>
+                            {dateHeure(vente.cree_le)}
+                            {vente.agence_nom ? ` · ${vente.agence_nom}` : ""}
+                            {vente.corrigible ? " · corrigible" : " · figée"}
+                          </>
+                        }
+                        statut={
+                          vente.adhesion_requise ? (
+                            <Badge ton="alerte">Adhésion à saisir</Badge>
+                          ) : (
+                            <Badge ton="succes">{vente.statut_activation}</Badge>
+                          )
+                        }
+                      />
+                    ))}
+                  </ListeLignes>
+                )}
               </div>
-            ) : !ventes.donnees?.length ? (
-              <EtatVide
-                titre="Aucune vente"
-                description="Vos ventes apparaîtront ici."
-                action={
-                  ouvertes.donnees?.length ? (
-                    <Bouton taille="petite" onClick={() => setSaisie(true)}>
-                      Enregistrer une vente
-                    </Bouton>
-                  ) : null
+            </Carte>
+
+            <GestionRessource spec={sections.clients(true)} />
+            <GestionRessource spec={sections.enrolements(true)} />
+            <GestionRessource spec={sections.adhesions(true)} />
+            <GestionRessource spec={sections.rapportsTelephoniques(true)} />
+            <GestionRessource spec={sections.reclamations(true)} />
+          </>
+        ) : null}
+
+        {onglet === "pilotage" ? (
+          <>
+            <GestionRessource spec={sections.campagnes(pilote)} />
+            <GestionRessource spec={sections.contrats()} />
+            <GestionRessource spec={sections.aides(pilote)} />
+            <GestionRessource spec={sections.primes()} />
+          </>
+        ) : null}
+
+        {onglet === "referentiels" ? (
+          <>
+            <GestionRessource spec={sections.partenaires(pilote)} />
+            <GestionRessource spec={sections.agences(pilote)} />
+            <GestionRessource spec={sections.typesCartes(pilote)} />
+            <GestionRessource spec={sections.commerciaux(pilote)} />
+          </>
+        ) : null}
+
+        {onglet === "classement" ? (
+          <>
+            <div className="max-w-sm">
+              <Selection
+                libelle="Campagne"
+                value={campagneChoisie ? String(campagneChoisie) : ""}
+                onChange={(evenement) =>
+                  setCampagneChoisie(
+                    evenement.target.value ? Number(evenement.target.value) : null,
+                  )
                 }
+                options={[
+                  { valeur: "", libelle: "Choisir une campagne" },
+                  ...(toutes.donnees ?? []).map((campagne) => ({
+                    valeur: campagne.id,
+                    libelle: campagne.nom,
+                  })),
+                ]}
               />
-            ) : (
-              <ListeLignes>
-                {ventes.donnees.map((vente) => (
-                  <LigneListe
-                    key={vente.id}
-                    titre={`${vente.client_nom} — ${vente.type_carte_libelle}`}
-                    detail={
-                      <>
-                        {dateHeure(vente.cree_le)}
-                        {vente.agence_nom ? ` · ${vente.agence_nom}` : ""}
-                        {vente.corrigible
-                          ? " · corrigible"
-                          : " · figée"}
-                      </>
-                    }
-                    statut={
-                      vente.adhesion_requise ? (
-                        <Badge ton="alerte">Adhésion à saisir</Badge>
-                      ) : (
-                        <Badge ton="succes">{vente.statut_activation}</Badge>
-                      )
-                    }
-                  />
-                ))}
-              </ListeLignes>
-            )}
-          </div>
-        </Carte>
-      ) : null}
-
-      {onglet === "campagnes" ? (
-        <Carte sansPadding>
-          <div className="px-4 sm:px-5">
-            {toutes.chargement ? (
-              <Chargement />
-            ) : !toutes.donnees?.length ? (
-              <EtatVide titre="Aucune campagne" />
-            ) : (
-              <ListeLignes>
-                {toutes.donnees.map((campagne) => (
-                  <LigneListe
-                    key={campagne.id}
-                    titre={`${campagne.nom} — ${campagne.partenaire_nom || "sans partenaire"}`}
-                    detail={
-                      <>
-                        {date(campagne.date_debut)} → {date(campagne.date_fin)} ·{" "}
-                        {campagne.type_campagne_libelle}
-                        {campagne.sans_agences ? " · sans réseau d'agences" : ""}
-                      </>
-                    }
-                    valeur={montant(campagne.prime_meilleur_vendeur)}
-                    statut={
-                      <Badge ton={campagne.ouverte ? "succes" : "neutre"}>
-                        {campagne.statut_effectif}
-                      </Badge>
-                    }
-                    onClick={() => {
-                      setCampagneChoisie(campagne.id);
-                      setOnglet("classement");
-                    }}
-                  />
-                ))}
-              </ListeLignes>
-            )}
-          </div>
-        </Carte>
-      ) : null}
-
-      {onglet === "classement" ? (
-        <div className="space-y-4">
-          <div className="max-w-sm">
-            <Selection
-              libelle="Campagne"
-              value={campagneChoisie ? String(campagneChoisie) : ""}
-              onChange={(evenement) =>
-                setCampagneChoisie(
-                  evenement.target.value ? Number(evenement.target.value) : null,
-                )
-              }
-              options={[
-                { valeur: "", libelle: "Choisir une campagne" },
-                ...(toutes.donnees ?? ouvertes.donnees ?? []).map((campagne) => ({
-                  valeur: campagne.id,
-                  libelle: campagne.nom,
-                })),
-              ]}
-            />
-          </div>
-
-          <Carte
-            titre="Classement des commerciaux"
-            sousTitre="Ceux qui n'ont rien vendu y figurent aussi : les masquer ne dirait rien."
-            actions={
-              pilote && campagneChoisie ? (
-                <BoutonPrimes
-                  campagne={campagneChoisie}
-                  onCalcule={() => void classement.recharger()}
-                />
-              ) : null
-            }
-            sansPadding
-          >
-            <div className="px-4 sm:px-5">
-              {!campagneChoisie ? (
-                <EtatVide
-                  titre="Aucune campagne choisie"
-                  description="Sélectionnez une campagne pour voir son classement."
-                />
-              ) : classement.chargement ? (
-                <Chargement />
-              ) : classement.erreur ? (
-                <div className="py-5">
-                  <Alerte>{classement.erreur}</Alerte>
-                </div>
-              ) : !classement.donnees?.length ? (
-                <EtatVide
-                  titre="Aucun commercial"
-                  description="Cette campagne n'engage encore personne."
-                />
-              ) : (
-                <ListeLignes>
-                  {classement.donnees.map((ligne) => (
-                    <LigneListe
-                      key={ligne.commercial_id}
-                      titre={`${ligne.rang}. ${ligne.nom_complet}`}
-                      detail={ligne.agence || "Sans agence"}
-                      valeur={`${ligne.ventes} vente(s)`}
-                      statut={
-                        ligne.rang === 1 && ligne.ventes > 0 ? (
-                          <Badge ton="succes">Meilleur vendeur</Badge>
-                        ) : null
-                      }
-                    />
-                  ))}
-                </ListeLignes>
-              )}
             </div>
-          </Carte>
-        </div>
-      ) : null}
+
+            <Carte
+              titre="Classement des commerciaux"
+              sousTitre="Ceux qui n'ont rien vendu y figurent aussi : les masquer ne dirait rien."
+              actions={
+                pilote && campagneChoisie ? (
+                  <BoutonPrimes
+                    campagne={campagneChoisie}
+                    onCalcule={() => void classement.recharger()}
+                  />
+                ) : null
+              }
+              sansPadding
+            >
+              <div className="px-4 sm:px-5">
+                {!campagneChoisie ? (
+                  <EtatVide
+                    titre="Aucune campagne choisie"
+                    description="Sélectionnez une campagne pour voir son classement."
+                  />
+                ) : classement.chargement ? (
+                  <Chargement />
+                ) : classement.erreur ? (
+                  <div className="py-5">
+                    <Alerte>{classement.erreur}</Alerte>
+                  </div>
+                ) : !classement.donnees?.length ? (
+                  <EtatVide
+                    titre="Aucun commercial"
+                    description="Cette campagne n'engage encore personne."
+                  />
+                ) : (
+                  <ListeLignes>
+                    {classement.donnees.map((ligne) => (
+                      <LigneListe
+                        key={ligne.commercial_id}
+                        titre={`${ligne.rang}. ${ligne.nom_complet}`}
+                        detail={ligne.agence || "Sans agence"}
+                        valeur={`${ligne.ventes} vente(s)`}
+                        statut={
+                          ligne.rang === 1 && ligne.ventes > 0 ? (
+                            <Badge ton="succes">Meilleur vendeur</Badge>
+                          ) : null
+                        }
+                      />
+                    ))}
+                  </ListeLignes>
+                )}
+              </div>
+            </Carte>
+          </>
+        ) : null}
+      </div>
 
       {saisie ? (
         <FormulaireVente
@@ -456,10 +459,7 @@ function FormulaireVente({
             libelle="Type de carte"
             value={typeCarte}
             onChange={(evenement) => setTypeCarte(evenement.target.value)}
-            options={types.map((type) => ({
-              valeur: type.id,
-              libelle: type.libelle,
-            }))}
+            options={types.map((type) => ({ valeur: type.id, libelle: type.libelle }))}
             erreurs={action.champs.type_carte}
           />
           <Champ

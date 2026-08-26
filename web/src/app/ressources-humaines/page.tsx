@@ -38,15 +38,29 @@ import {
   Statistique,
   ZoneTexte,
 } from "@/composants/ui";
+import { GestionRessource } from "@/composants/ressource";
 import { aujourdhui, date, heure, nombre } from "@/lib/format";
 import { useAction, useListe, useRessource } from "@/lib/ressources";
 import { useSession } from "@/lib/session";
 import type { DemandeAbsence, SoldeConge, TypeAbsence } from "@/lib/types";
 
+import * as sections from "./sections";
+
 /** Le solde renvoyé pour un compte sans fiche d'agent porte ce drapeau. */
 type SoldeEventuel = SoldeConge & { sans_fiche?: boolean };
 
+/** Les onglets qui listent des demandes. Le service RH a les siens, plus bas. */
 type Onglet = "conges" | "permissions" | "retards" | "a-valider";
+
+/** Ce que le service RH administre pour toute l'entreprise. */
+type OngletService = "presences" | "carriere" | "formation" | "referentiels";
+
+const ONGLETS_SERVICE: { cle: OngletService; libelle: string }[] = [
+  { cle: "presences", libelle: "Présences" },
+  { cle: "carriere", libelle: "Évaluations" },
+  { cle: "formation", libelle: "Formations" },
+  { cle: "referentiels", libelle: "Référentiels" },
+];
 
 /** Libellés des types imposés, installés par `manage.py amorcer`. */
 const TYPE_PERMISSION = "Permission";
@@ -92,7 +106,7 @@ export default function PageRessourcesHumaines() {
 
 function Contenu() {
   const { profil } = useSession();
-  const [onglet, setOnglet] = useState<Onglet>("conges");
+  const [onglet, setOnglet] = useState<Onglet | OngletService>("conges");
   const [formulaire, setFormulaire] = useState<{
     categorie: Onglet;
     demande?: DemandeAbsence;
@@ -102,9 +116,13 @@ function Contenu() {
   const roles = profil?.habilitations.rh ?? [];
   const peutValider = roles.includes("gestionnaire") || roles.includes("direction");
 
-  const config = ONGLETS[onglet];
-  const chemin =
-    onglet === "a-valider"
+  // Les onglets du service RH n'affichent pas de demandes : inutile d'aller
+  // les chercher tant qu'on n'est pas revenu sur un onglet qui en montre.
+  const ongletDemande: Onglet | null = onglet in ONGLETS ? (onglet as Onglet) : null;
+  const config = ongletDemande ? ONGLETS[ongletDemande] : null;
+  const chemin = !config
+    ? null
+    : onglet === "a-valider"
       ? "/rh/demandes-absence/a-valider"
       : `/rh/demandes-absence/par-categorie/${config.categorie}`;
 
@@ -132,7 +150,7 @@ function Contenu() {
   );
 
   const onglets = useMemo(() => {
-    const liste: { cle: Onglet; libelle: string; compteur?: number }[] = [
+    const liste: { cle: Onglet | OngletService; libelle: string; compteur?: number }[] = [
       { cle: "conges", libelle: ONGLETS.conges.libelle },
       { cle: "permissions", libelle: ONGLETS.permissions.libelle },
       { cle: "retards", libelle: ONGLETS.retards.libelle },
@@ -145,6 +163,7 @@ function Contenu() {
         compteur: enAttente,
       });
     }
+    if (peutValider) liste.push(...ONGLETS_SERVICE);
     return liste;
   }, [aValider.donnees, peutValider]);
 
@@ -158,8 +177,8 @@ function Contenu() {
         titre="Ressources humaines"
         description="Congés, permissions, retards et suivi de vos demandes."
         actions={
-          onglet !== "a-valider" ? (
-            <Bouton onClick={() => setFormulaire({ categorie: onglet })}>
+          ongletDemande && ongletDemande !== "a-valider" ? (
+            <Bouton onClick={() => setFormulaire({ categorie: ongletDemande })}>
               {onglet === "retards" ? "Signaler un retard" : "Nouvelle demande"}
             </Bouton>
           ) : null
@@ -206,6 +225,34 @@ function Contenu() {
 
       <Onglets onglets={onglets} actif={onglet} onChange={setOnglet} />
 
+      {onglet === "presences" ? (
+        <GestionRessource spec={sections.presences(peutValider)} />
+      ) : null}
+
+      {onglet === "carriere" ? (
+        <div className="space-y-6">
+          <GestionRessource spec={sections.campagnes(peutValider)} />
+          <GestionRessource spec={sections.criteres(peutValider)} />
+          <GestionRessource spec={sections.evaluations(peutValider)} />
+        </div>
+      ) : null}
+
+      {onglet === "formation" ? (
+        <div className="space-y-6">
+          <GestionRessource spec={sections.formations(peutValider)} />
+          <GestionRessource spec={sections.inscriptions(peutValider)} />
+        </div>
+      ) : null}
+
+      {onglet === "referentiels" ? (
+        <div className="space-y-6">
+          <GestionRessource spec={sections.typesAbsence(peutValider)} />
+          <GestionRessource spec={sections.soldes(peutValider)} />
+          <GestionRessource spec={sections.circuits(peutValider)} />
+        </div>
+      ) : null}
+
+      {config ? (
       <Carte titre={config.titre} sousTitre={config.description} sansPadding>
         <div className="px-4 sm:px-5">
           {demandes.chargement ? (
@@ -227,10 +274,10 @@ function Contenu() {
                   : "Vos demandes apparaîtront ici."
               }
               action={
-                onglet !== "a-valider" ? (
+                ongletDemande && ongletDemande !== "a-valider" ? (
                   <Bouton
                     taille="petite"
-                    onClick={() => setFormulaire({ categorie: onglet })}
+                    onClick={() => setFormulaire({ categorie: ongletDemande })}
                   >
                     Déposer une demande
                   </Bouton>
@@ -273,6 +320,7 @@ function Contenu() {
           )}
         </div>
       </Carte>
+      ) : null}
 
       {formulaire ? (
         <FormulaireDemande

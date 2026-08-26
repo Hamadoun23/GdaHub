@@ -31,9 +31,12 @@ import {
   Statistique,
 } from "@/composants/ui";
 import { date, nombre } from "@/lib/format";
+import { GestionRessource } from "@/composants/ressource";
 import { useAction, useListe, useRessource } from "@/lib/ressources";
 import { useSession } from "@/lib/session";
 import type { Agent, Departement, NoeudOrganigramme } from "@/lib/types";
+
+import * as sections from "./sections";
 
 type Onglet = "annuaire" | "organigramme" | "departements";
 
@@ -191,33 +194,7 @@ function Contenu() {
       ) : null}
 
       {onglet === "departements" ? (
-        <Carte sansPadding>
-          <div className="px-4 sm:px-5">
-            {departements.chargement ? (
-              <Chargement />
-            ) : !departements.donnees?.length ? (
-              <EtatVide titre="Aucun département" />
-            ) : (
-              <ListeLignes>
-                {departements.donnees.map((unite) => (
-                  <LigneListe
-                    key={unite.id}
-                    titre={`${unite.code} — ${unite.nom}`}
-                    detail={
-                      unite.responsable_nom
-                        ? `Responsable : ${unite.responsable_nom}`
-                        : "Aucun responsable désigné"
-                    }
-                    valeur={`${unite.effectif} agent(s)`}
-                    statut={
-                      unite.actif ? null : <Badge ton="neutre">Inactif</Badge>
-                    }
-                  />
-                ))}
-              </ListeLignes>
-            )}
-          </div>
-        </Carte>
+        <GestionRessource spec={sections.departements(peutEcrire)} />
       ) : null}
 
       <Modale

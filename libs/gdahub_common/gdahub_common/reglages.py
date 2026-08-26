@@ -110,7 +110,12 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
-MEDIA_URL = "media/"
+
+# Chaque service range ses fichiers dans son propre volume, mais le navigateur
+# ne voit qu'une seule origine : sans prefixe par service, le « justificatifs/ »
+# des ressources humaines et celui de la finance designeraient la meme adresse.
+# C'est ce prefixe que la passerelle route vers le bon volume.
+MEDIA_URL = f"media/{GDAHUB_APPLICATION or 'commun'}/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

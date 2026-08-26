@@ -374,6 +374,11 @@ services:
     depends_on: [identity, organisation, rh, finance, direction, bdm, orange, daily, planning, web]
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # En lecture seule : la passerelle distribue les fichiers, elle n'en
+      # ecrit aucun.
+      - media-rh:/var/media/rh:ro
+      - media-finance:/var/media/finance:ro
+      - media-daily:/var/media/daily:ro
     ports: ["127.0.0.1:8080:80"]
 
 volumes:

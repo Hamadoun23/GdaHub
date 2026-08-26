@@ -27,13 +27,17 @@ import {
   ListeLignes,
   Modale,
   Onglets,
+  Selection,
   Statistique,
   ZoneTexte,
   cx,
 } from "@/composants/ui";
 import { aujourdhui, date } from "@/lib/format";
+import { GestionRessource } from "@/composants/ressource";
 import { useAction, useListe, useRessource } from "@/lib/ressources";
 import { useSession } from "@/lib/session";
+
+import * as sections from "./sections";
 
 type Projet = {
   id: number;
@@ -86,7 +90,9 @@ export default function PageChantiers() {
 
 function Contenu() {
   const { profil } = useSession();
-  const [onglet, setOnglet] = useState<"chantiers" | "journal">("chantiers");
+  const [onglet, setOnglet] = useState<
+    "suivi" | "structure" | "photos" | "rapports" | "journal"
+  >("suivi");
   const [ouvert, setOuvert] = useState<number | null>(null);
   const [saisie, setSaisie] = useState<Tache | null>(null);
 
@@ -100,13 +106,7 @@ function Contenu() {
   const detail = useRessource<ProjetDetail>(
     ouvert ? `/daily/projets/${ouvert}` : null,
   );
-  const journal = useListe<{
-    id: number;
-    action: string;
-    description: string;
-    agent_nom: string;
-    cree_le: string;
-  }>(onglet === "journal" ? "/daily/journal?taille=50" : null);
+
 
   return (
     <>
@@ -137,14 +137,17 @@ function Contenu() {
 
       <Onglets
         onglets={[
-          { cle: "chantiers" as const, libelle: "Chantiers" },
-          { cle: "journal" as const, libelle: "Journal d'activité" },
+          { cle: "suivi" as const, libelle: "Suivi" },
+          { cle: "structure" as const, libelle: "Découpage" },
+          { cle: "photos" as const, libelle: "Photos" },
+          { cle: "rapports" as const, libelle: "Rapports" },
+          { cle: "journal" as const, libelle: "Journal" },
         ]}
         actif={onglet}
         onChange={setOnglet}
       />
 
-      {onglet === "chantiers" ? (
+      {onglet === "suivi" ? (
         <div className="space-y-6">
           <Carte sansPadding>
             <div className="px-4 sm:px-5">
@@ -184,31 +187,25 @@ function Contenu() {
             </div>
           </Carte>
         </div>
-      ) : (
-        <Carte sansPadding>
-          <div className="px-4 sm:px-5">
-            {journal.chargement ? (
-              <Chargement />
-            ) : !journal.donnees?.length ? (
-              <EtatVide
-                titre="Journal vide"
-                description="Les gestes des équipes s'y inscriront."
-              />
-            ) : (
-              <ListeLignes>
-                {journal.donnees.map((ligne) => (
-                  <LigneListe
-                    key={ligne.id}
-                    titre={ligne.description || ligne.action}
-                    detail={`${ligne.agent_nom} · ${date(ligne.cree_le)}`}
-                    statut={<Badge>{ligne.action}</Badge>}
-                  />
-                ))}
-              </ListeLignes>
-            )}
-          </div>
-        </Carte>
-      )}
+      ) : null}
+
+      {onglet === "structure" ? (
+        <div className="space-y-6">
+          <GestionRessource spec={sections.projets(peutSaisir)} />
+          <GestionRessource spec={sections.phases(peutSaisir)} />
+          <GestionRessource spec={sections.sousPhases(peutSaisir)} />
+          <GestionRessource spec={sections.taches(peutSaisir)} />
+          <GestionRessource spec={sections.saisies()} />
+        </div>
+      ) : null}
+
+      {onglet === "photos" ? <GaleriePhotos peutEcrire={peutSaisir} /> : null}
+
+      {onglet === "rapports" ? (
+        <GestionRessource spec={sections.rapports(peutSaisir)} />
+      ) : null}
+
+      {onglet === "journal" ? <GestionRessource spec={sections.journal()} /> : null}
 
       <Modale
         ouverte={ouvert !== null}
@@ -423,3 +420,187 @@ function FormulaireAvancement({
     </Modale>
   );
 }
+
+/**
+ * La galerie du chantier.
+ *
+ * Ecrite a la main, parce qu'une photo n'est pas un champ de formulaire : on la
+ * regarde. Le classement avant / pendant / apres est ce qui rend une reserve
+ * opposable au client — d'ou le filtre en tete.
+ */
+function GaleriePhotos({ peutEcrire }: { peutEcrire: boolean }) {
+  const { requete } = useSession();
+  const action = useAction();
+  const [projet, setProjet] = useState("");
+  const [categorie, setCategorie] = useState("");
+  const [ajout, setAjout] = useState(false);
+
+  const projets = useListe<{ id: number; nom: string }>("/daily/projets?taille=100");
+  const parametres = [
+    projet ? `projet=${projet}` : "",
+    categorie ? `categorie=${categorie}` : "",
+    "taille=60",
+  ]
+    .filter(Boolean)
+    .join("&");
+  const photos = useListe<{
+    id: number;
+    projet: number;
+    categorie: string;
+    categorie_libelle: string;
+    fichier: string;
+    legende: string;
+    prise_le: string | null;
+    agent_nom: string;
+    cree_le: string;
+  }>(`/daily/photos?${parametres}`);
+
+  const envoyer = async (evenement: React.FormEvent<HTMLFormElement>) => {
+    evenement.preventDefault();
+    const formulaire = new FormData(evenement.currentTarget);
+    const succes = await action.executer(() =>
+      requete("/daily/photos", { methode: "POST", corps: formulaire }),
+    );
+    if (succes) {
+      setAjout(false);
+      void photos.recharger();
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Carte>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-45 flex-1">
+            <Selection
+              libelle="Chantier"
+              value={projet}
+              onChange={(evenement) => setProjet(evenement.target.value)}
+              options={[
+                { valeur: "", libelle: "Tous les chantiers" },
+                ...(projets.donnees ?? []).map((element) => ({
+                  valeur: element.id,
+                  libelle: element.nom,
+                })),
+              ]}
+            />
+          </div>
+          <div className="min-w-45 flex-1">
+            <Selection
+              libelle="Moment"
+              value={categorie}
+              onChange={(evenement) => setCategorie(evenement.target.value)}
+              options={[{ valeur: "", libelle: "Tous les moments" }, ...CATEGORIES_PHOTO]}
+            />
+          </div>
+          {peutEcrire ? (
+            <Bouton onClick={() => setAjout(true)}>Ajouter une photo</Bouton>
+          ) : null}
+        </div>
+      </Carte>
+
+      {photos.chargement ? (
+        <Chargement />
+      ) : photos.erreur ? (
+        <Alerte>{photos.erreur}</Alerte>
+      ) : !photos.donnees?.length ? (
+        <EtatVide
+          titre="Aucune photo"
+          description="Les prises de vue du chantier apparaitront ici."
+        />
+      ) : (
+        <Grille colonnes={4}>
+          {photos.donnees.map((photo) => (
+            <Carte key={photo.id} sansPadding>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photo.fichier}
+                alt={photo.legende || photo.categorie_libelle}
+                className="h-40 w-full rounded-t-xl object-cover"
+              />
+              <div className="space-y-1 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge>{photo.categorie_libelle}</Badge>
+                  <span className="text-xs text-ardoise-500">
+                    {date(photo.prise_le ?? photo.cree_le)}
+                  </span>
+                </div>
+                <p className="text-sm">{photo.legende || "Sans légende"}</p>
+                <p className="text-xs text-ardoise-500">{photo.agent_nom}</p>
+              </div>
+            </Carte>
+          ))}
+        </Grille>
+      )}
+
+      <Modale
+        ouverte={ajout}
+        titre="Ajouter une photo"
+        description="Le moment de la prise de vue est ce qui rend la photo utile."
+        onFermer={() => setAjout(false)}
+      >
+        <form onSubmit={envoyer} className="space-y-4">
+          {action.erreur ? <Alerte>{action.erreur}</Alerte> : null}
+
+          <Selection
+            libelle="Chantier"
+            name="projet"
+            required
+            erreurs={action.champs.projet}
+            options={[
+              { valeur: "", libelle: "Choisir un chantier" },
+              ...(projets.donnees ?? []).map((element) => ({
+                valeur: element.id,
+                libelle: element.nom,
+              })),
+            ]}
+          />
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Selection
+              libelle="Moment"
+              name="categorie"
+              required
+              erreurs={action.champs.categorie}
+              options={CATEGORIES_PHOTO}
+            />
+            <Champ
+              libelle="Prise le"
+              name="prise_le"
+              type="date"
+              defaultValue={aujourdhui()}
+              erreurs={action.champs.prise_le}
+            />
+          </div>
+
+          <Champ
+            libelle="Fichier"
+            name="fichier"
+            type="file"
+            accept="image/*"
+            required
+            erreurs={action.champs.fichier}
+          />
+          <Champ libelle="Légende" name="legende" erreurs={action.champs.legende} />
+
+          <div className="flex justify-end gap-2 border-t border-ardoise-200 pt-4 dark:border-ardoise-700">
+            <Bouton type="button" variante="secondaire" onClick={() => setAjout(false)}>
+              Annuler
+            </Bouton>
+            <Bouton type="submit" chargement={action.enCours}>
+              Enregistrer
+            </Bouton>
+          </div>
+        </form>
+      </Modale>
+    </div>
+  );
+}
+
+const CATEGORIES_PHOTO = [
+  { valeur: "AVANT", libelle: "Avant" },
+  { valeur: "PENDANT", libelle: "Pendant" },
+  { valeur: "APRES", libelle: "Après" },
+  { valeur: "SECURITE", libelle: "Sécurité" },
+  { valeur: "QUALITE", libelle: "Qualité" },
+];

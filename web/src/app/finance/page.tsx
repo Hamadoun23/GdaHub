@@ -21,7 +21,6 @@ import {
 } from "@/composants/metier";
 import {
   Alerte,
-  Badge,
   Bouton,
   Carte,
   Champ,
@@ -37,6 +36,7 @@ import {
   Statistique,
   ZoneTexte,
 } from "@/composants/ui";
+import { GestionRessource } from "@/composants/ressource";
 import { aujourdhui, date, montant } from "@/lib/format";
 import { useAction, useListe, useRessource } from "@/lib/ressources";
 import { useSession } from "@/lib/session";
@@ -50,7 +50,17 @@ import type {
   Requisition,
 } from "@/lib/types";
 
-type Onglet = "depenses" | "requisitions" | "missions" | "caisses" | "a-valider";
+import * as sections from "./sections";
+
+type Onglet =
+  | "depenses"
+  | "requisitions"
+  | "missions"
+  | "achats"
+  | "caisses"
+  | "communication"
+  | "referentiels"
+  | "a-valider";
 
 type TableauFinance = {
   mes_demandes_en_cours: number;
@@ -72,7 +82,9 @@ function Contenu() {
   const { profil } = useSession();
   const [onglet, setOnglet] = useState<Onglet>("depenses");
   const [selection, setSelection] = useState<DocumentValidable | null>(null);
-  const [formulaire, setFormulaire] = useState<Onglet | null>(null);
+  const [formulaire, setFormulaire] = useState<
+    "depenses" | "requisitions" | "missions" | null
+  >(null);
 
   const roles = profil?.habilitations.finance ?? [];
   const estFinancier = roles.includes("gestionnaire") || roles.includes("direction");
@@ -115,7 +127,12 @@ function Contenu() {
       { cle: "requisitions", libelle: "Réquisitions" },
       { cle: "missions", libelle: "Missions" },
     ];
-    if (estFinancier) liste.push({ cle: "caisses", libelle: "Caisses" });
+    if (estFinancier) {
+      liste.push({ cle: "achats", libelle: "Achats" });
+      liste.push({ cle: "caisses", libelle: "Caisses" });
+      liste.push({ cle: "communication", libelle: "Communication" });
+      liste.push({ cle: "referentiels", libelle: "Référentiels" });
+    }
     liste.push({
       cle: "a-valider",
       libelle: "À valider",
@@ -130,7 +147,7 @@ function Contenu() {
         titre="Finance"
         description="Dépenses, réquisitions, missions et caisse."
         actions={
-          ["depenses", "requisitions", "missions"].includes(onglet) ? (
+          onglet === "depenses" || onglet === "requisitions" || onglet === "missions" ? (
             <Bouton onClick={() => setFormulaire(onglet)}>Nouvelle demande</Bouton>
           ) : null
         }
@@ -220,38 +237,37 @@ function Contenu() {
         />
       ) : null}
 
+      {onglet === "achats" ? (
+        <div className="space-y-6">
+          <GestionRessource spec={sections.demandesPrix(estFinancier)} />
+          <GestionRessource spec={sections.offres(estFinancier)} />
+          <GestionRessource spec={sections.bonsCommande(estFinancier)} />
+          <GestionRessource spec={sections.prestations(estFinancier)} />
+        </div>
+      ) : null}
+
       {onglet === "caisses" ? (
-        <Carte sansPadding>
-          <div className="px-4 sm:px-5">
-            {caisses.chargement ? (
-              <Chargement />
-            ) : !caisses.donnees?.length ? (
-              <EtatVide titre="Aucune caisse" />
-            ) : (
-              <ListeLignes>
-                {caisses.donnees.map((caisse) => (
-                  <LigneListe
-                    key={caisse.id}
-                    titre={`${caisse.code} — ${caisse.libelle}`}
-                    detail={
-                      caisse.responsable_nom
-                        ? `Responsable : ${caisse.responsable_nom}`
-                        : "Aucun responsable désigné"
-                    }
-                    valeur={montant(caisse.solde_actuel, caisse.devise)}
-                    statut={
-                      caisse.sous_alerte ? (
-                        <Badge ton="alerte">À réapprovisionner</Badge>
-                      ) : (
-                        <Badge ton="succes">Approvisionnée</Badge>
-                      )
-                    }
-                  />
-                ))}
-              </ListeLignes>
-            )}
-          </div>
-        </Carte>
+        <div className="space-y-6">
+          <GestionRessource spec={sections.caisses(estFinancier)} />
+          <GestionRessource spec={sections.approvisionnements(estFinancier)} />
+          <GestionRessource spec={sections.sortiesCaisse(estFinancier)} />
+        </div>
+      ) : null}
+
+      {onglet === "communication" ? (
+        <div className="space-y-6">
+          <GestionRessource spec={sections.forfaits(estFinancier)} />
+          <GestionRessource spec={sections.consommations(estFinancier)} />
+        </div>
+      ) : null}
+
+      {onglet === "referentiels" ? (
+        <div className="space-y-6">
+          <GestionRessource spec={sections.fournisseurs(estFinancier)} />
+          <GestionRessource spec={sections.categories(estFinancier)} />
+          <GestionRessource spec={sections.baremes(estFinancier)} />
+          <GestionRessource spec={sections.circuits(estFinancier)} />
+        </div>
       ) : null}
 
       <Modale
@@ -388,7 +404,7 @@ function FormulaireDemande({
   onFermer,
   onEnregistre,
 }: {
-  nature: Onglet;
+  nature: "depenses" | "requisitions" | "missions";
   categories: CategorieDepense[];
   fournisseurs: Fournisseur[];
   onFermer: () => void;
@@ -474,7 +490,7 @@ function FormulaireDemande({
   return (
     <Modale
       ouverte
-      titre={titres[nature] ?? "Nouvelle demande"}
+      titre={titres[nature]}
       description={
         nature === "requisitions"
           ? "La réquisition est créée en brouillon : ajoutez ses lignes, puis envoyez-la."

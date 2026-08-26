@@ -41,14 +41,24 @@ type Options = {
 export async function appeler<T>(chemin: string, options: Options = {}): Promise<T> {
   const { methode = "GET", corps, jeton, signal } = options;
 
+  // Un envoi de fichier part en multipart : le navigateur pose lui-meme
+  // l'en-tete, avec la frontiere qu'il a tiree. L'ecrire a la main casse
+  // l'analyse cote Django.
+  const fichierJoint = typeof FormData !== "undefined" && corps instanceof FormData;
+
   const entetes: Record<string, string> = { Accept: "application/json" };
-  if (corps !== undefined) entetes["Content-Type"] = "application/json";
+  if (corps !== undefined && !fichierJoint) entetes["Content-Type"] = "application/json";
   if (jeton) entetes.Authorization = `Bearer ${jeton}`;
 
   const reponse = await fetch(`${BASE_API}${chemin}`, {
     method: methode,
     headers: entetes,
-    body: corps === undefined ? undefined : JSON.stringify(corps),
+    body:
+      corps === undefined
+        ? undefined
+        : fichierJoint
+          ? (corps as FormData)
+          : JSON.stringify(corps),
     signal,
   });
 
