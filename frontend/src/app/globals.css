@@ -1,0 +1,495 @@
+@import "tailwindcss";
+
+/* =========================================================================
+   Feuille de style de GDA Hub.
+
+   Les trois applications rassemblees ont chacune apporte la sienne. Elles
+   sont ici bout a bout plutot que refondues : refondre une charte, c'est
+   changer l'aspect de vues qui fonctionnent, et ce n'est pas le sujet.
+
+   Les jetons ne se chevauchent presque pas — la palette « ardoise » est
+   commune au hub et a FinanceRH, aux memes valeurs. Les deux seuls
+   conflits reels, « --accent » et « --font-sans », sont tranches plus bas
+   au profit de Jus d'orange, dont l'interface en depend le plus.
+   ========================================================================= */
+
+/* --- Socle du hub ------------------------------------------------------- */
+/* Palette de GDA Hub. Le shell est volontairement neutre : ce sont les
+   applications qui portent la couleur, chacune la sienne, servie par identity
+   avec le catalogue. */
+@theme {
+  --color-ardoise-50: #f8fafc;
+  --color-ardoise-100: #f1f5f9;
+  --color-ardoise-200: #e2e8f0;
+  --color-ardoise-500: #64748b;
+  --color-ardoise-700: #334155;
+  --color-ardoise-900: #0f172a;
+  --color-marque: #0f766e;
+  --color-marque-clair: #14b8a6;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  background-color: var(--color-ardoise-50);
+  color: var(--color-ardoise-900);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--color-ardoise-900);
+    color: var(--color-ardoise-100);
+  }
+}
+
+/* --- FinanceRH ---------------------------------------------------------- */
+/* ------------------------------------------------------------------
+   GDA — jetons de design
+
+   Trois couleurs de marque : l'orange #FF6A3A, le gris #6F7071 et le
+   blanc. Les deux echelles ci-dessous en derivent, a teinte et
+   saturation constantes, pour disposer des nuances qu'une interface
+   reclame (fonds tres clairs, bordures, textes lisibles).
+
+   Contraste — l'orange de marque ne passe qu'a 2,85:1 sur blanc : il
+   est superbe en aplat et en accent, illisible en texte. Les niveaux
+   700 et 800 existent pour ca : 4,80:1 et 7,3:1 sur blanc, donc du
+   texte et des boutons conformes AA, dans la meme famille chromatique.
+------------------------------------------------------------------- */
+
+@theme {
+  /* --- Orange de marque -------------------------------------------- */
+  --color-marque-50: #fff4f0;
+  --color-marque-100: #ffe6dc;
+  --color-marque-200: #ffc9b4;
+  --color-marque-300: #ffa98b;
+  --color-marque-400: #ff8a62;
+  --color-marque-500: #ff6a3a; /* couleur GDA exacte */
+  --color-marque-600: #ea4e17;
+  --color-marque-700: #d03e0d; /* texte et boutons : 4,80:1 sur blanc */
+  --color-marque-800: #a63209;
+  --color-marque-900: #7e270a;
+
+  /* --- Gris de marque ----------------------------------------------- */
+  --color-ardoise-50: #f7f7f8;
+  --color-ardoise-100: #efeff0;
+  --color-ardoise-200: #dededf;
+  --color-ardoise-300: #c4c5c6;
+  --color-ardoise-400: #9b9c9d;
+  --color-ardoise-500: #6f7071; /* couleur GDA exacte */
+  --color-ardoise-600: #5c5d5e;
+  --color-ardoise-700: #4a4b4c;
+  --color-ardoise-800: #3a3b3c;
+  --color-ardoise-900: #2c2d2e;
+  --color-ardoise-950: #1c1d1e;
+
+  /* --- Neutres de l'interface ---------------------------------------
+     L'interface etait construite sur le gris bleute « slate » de
+     Tailwind. Plutot que de reecrire des centaines de classes, on
+     remplace l'echelle par le gris GDA : le changement se propage
+     partout, et un futur `text-slate-600` reste dans la charte.
+  ------------------------------------------------------------------- */
+  --color-slate-50: #f7f7f8;
+  --color-slate-100: #efeff0;
+  --color-slate-200: #dededf;
+  --color-slate-300: #c4c5c6;
+  --color-slate-400: #9b9c9d;
+  --color-slate-500: #6f7071;
+  --color-slate-600: #5c5d5e;
+  --color-slate-700: #4a4b4c;
+  --color-slate-800: #3a3b3c;
+  --color-slate-900: #2c2d2e;
+  --color-slate-950: #1c1d1e;
+
+  --font-sans: var(--police-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --fond: #f5f5f6;
+  --surface: #ffffff;
+  --surface-attenuee: #fafafa;
+  --bordure: #e4e4e5;
+  --texte: #2c2d2e;
+  --texte-attenue: #6f7071;
+  --accent: #d03e0d;
+  --accent-vif: #ff6a3a;
+  --accent-doux: #fff4f0;
+  --ombre-carte: 0 1px 2px rgb(28 29 30 / 0.04), 0 1px 3px rgb(28 29 30 / 0.06);
+  --ombre-flottante: 0 10px 30px -12px rgb(28 29 30 / 0.22);
+  --anneau-focus: 0 0 0 3px rgb(255 106 58 / 0.28);
+}
+
+* {
+  border-color: var(--bordure);
+}
+
+body {
+  background: var(--fond);
+  color: var(--texte);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Un anneau de focus unique, visible sur tous les fonds : la navigation
+   au clavier doit rester praticable partout. */
+:focus-visible {
+  outline: 2px solid var(--accent-vif);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* Barre de defilement discrete pour les tableaux denses. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c4c5c6;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9b9c9d;
+  background-clip: content-box;
+}
+
+@utility carte {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 0.875rem;
+  box-shadow: var(--ombre-carte);
+}
+
+@utility champ {
+  width: 100%;
+  border-radius: 0.625rem;
+  border: 1px solid var(--bordure);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.875rem;
+  color: var(--texte);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+@utility etiquette {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--texte-attenue);
+}
+
+.champ:focus {
+  border-color: var(--accent-vif);
+  box-shadow: var(--anneau-focus);
+}
+
+.champ::placeholder {
+  color: #9b9c9d;
+}
+
+.champ:disabled {
+  background: var(--surface-attenuee);
+  color: var(--texte-attenue);
+}
+
+/* Le logo est bordeaux : il lui faut un fond clair pour rester lisible.
+   Cette plaque le pose proprement sur les aplats sombres ou colores. */
+@utility plaque-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.7rem;
+  box-shadow: var(--ombre-carte);
+}
+
+@keyframes apparition {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.apparition {
+  animation: apparition 0.18s ease-out;
+}
+
+/* ------------------------------------------------------------------
+   Application installable et petits ecrans
+
+   L'outil est consulte depuis un telephone au moins autant que depuis
+   un poste : une demande de conge se saisit dans un couloir, une
+   validation se donne entre deux reunions. Ce qui suit ne retouche
+   pas la charte, il l'adapte au doigt, a l'encoche et au hors-ligne.
+------------------------------------------------------------------- */
+
+html {
+  /* iOS grossit le texte de son propre chef en paysage : la mise en
+     page saute, les tableaux debordent. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  /* Le doigt pose un rectangle gris sur chaque element touche ; nos
+     etats de survol et de focus disent deja la meme chose, mieux. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Sur un ecran tactile, un champ sous 16 px declenche un zoom
+   automatique a la mise au point sur iOS : la page se decale, et
+   l'utilisateur doit dezoomer a la main apres chaque saisie. */
+@media (pointer: coarse) {
+  .champ,
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Les animations d'apparition sont un agrement, pas une information. */
+@media (prefers-reduced-motion: reduce) {
+  .apparition {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- Tableaux : cartes empilees sur petit ecran -------------------
+   Un tableau de sept colonnes ne rentre pas dans 390 px. Le defilement
+   horizontal reste possible mais il cache la moitie de l'information
+   et se pratique mal au doigt. Sous 768 px, chaque ligne devient donc
+   une carte, et l'intitule de colonne — passe en variable CSS par le
+   composant — precede chaque valeur.
+------------------------------------------------------------------- */
+
+.tableau-reactif tbody tr:not(:last-child) {
+  border-bottom: 1px solid var(--color-slate-100);
+}
+
+@media (width < 48rem) {
+  .tableau-reactif {
+    padding: 0.75rem;
+  }
+
+  .tableau-reactif table,
+  .tableau-reactif tbody,
+  .tableau-reactif tr,
+  .tableau-reactif td {
+    display: block;
+  }
+
+  .tableau-reactif table {
+    min-width: 0;
+  }
+
+  .tableau-reactif thead {
+    display: none;
+  }
+
+  .tableau-reactif tbody tr {
+    border: 1px solid var(--bordure);
+    border-radius: 0.75rem;
+    padding: 0.5rem 0.85rem;
+    background: var(--surface);
+  }
+
+  .tableau-reactif tbody tr:not(:last-child) {
+    margin-bottom: 0.6rem;
+  }
+
+  .tableau-reactif td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.32rem 0;
+    /* Les largeurs figees des colonnes larges (`max-w-72`) depassent
+       l'ecran une fois la ligne repliee. */
+    max-width: 100%;
+  }
+
+  .tableau-reactif td::before {
+    content: "";
+    flex: none;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--texte-attenue);
+  }
+
+  /* Les intitules viennent du composant, colonne par colonne. Une
+     colonne sans titre (celle des actions) reste sans etiquette. */
+  .tableau-reactif td:nth-child(1)::before { content: var(--entete-1, ""); }
+  .tableau-reactif td:nth-child(2)::before { content: var(--entete-2, ""); }
+  .tableau-reactif td:nth-child(3)::before { content: var(--entete-3, ""); }
+  .tableau-reactif td:nth-child(4)::before { content: var(--entete-4, ""); }
+  .tableau-reactif td:nth-child(5)::before { content: var(--entete-5, ""); }
+  .tableau-reactif td:nth-child(6)::before { content: var(--entete-6, ""); }
+  .tableau-reactif td:nth-child(7)::before { content: var(--entete-7, ""); }
+  .tableau-reactif td:nth-child(8)::before { content: var(--entete-8, ""); }
+  .tableau-reactif td:nth-child(9)::before { content: var(--entete-9, ""); }
+  .tableau-reactif td:nth-child(10)::before { content: var(--entete-10, ""); }
+
+  /* Une cellule qui occupe toute la largeur (message, action pleine
+     ligne) n'a pas d'intitule a annoncer. */
+  .tableau-reactif td[colspan]::before {
+    content: "";
+  }
+}
+
+/* --- Jus d'orange ------------------------------------------------------- */
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.705 0.191 47.6);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0.01 60);
+  --secondary-foreground: oklch(0.28 0.06 45);
+  --muted: oklch(0.97 0.006 60);
+  --muted-foreground: oklch(0.556 0.02 50);
+  --accent: oklch(0.96 0.03 70);
+  --accent-foreground: oklch(0.34 0.09 45);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.915 0.008 60);
+  --input: oklch(0.915 0.008 60);
+  --ring: oklch(0.705 0.191 47.6);
+  /* Palette catégorielle des graphiques.
+     L'ancienne série était entièrement dans les oranges (teintes 25 à 88) :
+     deux séries voisines n'étaient séparées que de ΔE 10,6 en vision normale,
+     sous le plancher de 15 — indistinguables même sans daltonisme. L'orange de
+     la marque reste en tête ; les suivantes ouvrent l'espace des teintes.
+     Valeurs vérifiées : bande de clarté, plancher de chroma, séparation
+     daltonisme et contraste sur la surface claire. */
+  --chart-1: #eb6834; /* orange — marque */
+  --chart-2: #2a78d6; /* bleu */
+  --chart-3: #1baf7a; /* aqua */
+  --chart-4: #4a3aa7; /* violet */
+  --chart-5: #eda100; /* jaune */
+  --radius: 0.7rem;
+  --sidebar: oklch(0.985 0.004 70);
+  --sidebar-foreground: oklch(0.28 0.02 50);
+  --sidebar-primary: oklch(0.705 0.191 47.6);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.96 0.03 70);
+  --sidebar-accent-foreground: oklch(0.34 0.09 45);
+  --sidebar-border: oklch(0.915 0.008 60);
+  --sidebar-ring: oklch(0.705 0.191 47.6);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.705 0.191 47.6);
+  --primary-foreground: oklch(0.16 0.02 50);
+  --secondary: oklch(0.28 0.03 55);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.27 0.015 55);
+  --muted-foreground: oklch(0.72 0.03 60);
+  --accent: oklch(0.32 0.05 55);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.705 0.191 47.6);
+  /* Mêmes teintes, restepées pour la surface sombre : un mode sombre se
+     choisit, il ne s'obtient pas en inversant le mode clair. */
+  --chart-1: #dc631e;
+  --chart-2: #4385e4;
+  --chart-3: #00a472;
+  --chart-4: #8a66d9;
+  --chart-5: #b38400;
+  --sidebar: oklch(0.19 0.015 55);
+  --sidebar-foreground: oklch(0.95 0.008 70);
+  --sidebar-primary: oklch(0.705 0.191 47.6);
+  --sidebar-primary-foreground: oklch(0.16 0.02 50);
+  --sidebar-accent: oklch(0.3 0.04 55);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.705 0.191 47.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

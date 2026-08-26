@@ -1,0 +1,46 @@
+{% load static vite %}<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#FF6A3A">
+    <title inertia>{{ app_name }}</title>
+
+    {# PWA #}
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="{{ app_name }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ app_name }}">
+    <meta name="msapplication-TileColor" content="#FF6A3A">
+    <meta name="msapplication-TileImage" content="{% static 'logo/iconesgda.png' %}">
+    <meta name="msapplication-config" content="none">
+
+    {# Favicon + icônes d'installation #}
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'logo/iconesgda.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'logo/iconesgda.png' %}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{% static 'logo/iconesgda.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'logo/iconesgda.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'logo/iconesgda.png' %}">
+
+    {# Table de routes consommée par le helper route() du frontend #}
+    <script>window.Ziggy = {{ ziggy_json }};</script>
+
+    {% vite_react_refresh %}
+    {% vite_assets %}
+</head>
+<body class="font-sans antialiased text-gray-900">
+    {% block inertia %}{% endblock %}
+
+    <script>
+    (function () {
+        if (!('serviceWorker' in navigator)) return;
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('{% static "sw.js" %}', { scope: '/' }).catch(function () {});
+        });
+    })();
+    </script>
+</body>
+</html>
