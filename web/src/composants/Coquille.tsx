@@ -79,7 +79,18 @@ export function Coquille({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-ardoise-500">{profil.utilisateur.nom_complet}</span>
+            {/* Le nom mene au compte : c'est la ou l'on va pour changer son
+                mot de passe, et c'est le premier endroit ou l'on clique. */}
+            <Link
+              href="/mon-compte"
+              className={`rounded-md px-3 py-1.5 transition ${
+                chemin === "/mon-compte"
+                  ? "bg-ardoise-100 font-medium dark:bg-ardoise-700"
+                  : "text-ardoise-500 hover:bg-ardoise-100 dark:hover:bg-ardoise-700"
+              }`}
+            >
+              {profil.utilisateur.nom_complet}
+            </Link>
             <button
               type="button"
               onClick={() => deconnecter().then(() => routeur.replace("/connexion"))}

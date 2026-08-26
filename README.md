@@ -27,9 +27,20 @@ copy .env.example .env
 docker compose up -d
 ```
 
-Puis <http://localhost:8080>. Le compte créé au premier démarrage est celui du
-responsable IT — `hcisse@gdamali.net`, mot de passe `admin`, **à changer dès la
-première connexion**.
+Puis <http://localhost:8080>.
+
+| Compte | Identifiant | Mot de passe |
+| ------ | ----------- | ------------ |
+| Super administrateur | `hcisse@gdamali.net` | **`admin`** |
+| Comptes de l'effectif de démonstration | `d.general@exemple.net`, … | **`12345`** |
+
+Les deux mots de passe sont différents, et c'est facile à confondre : celui du
+super administrateur est `admin`, `12345` étant celui attribué aux comptes
+importés du fichier d'effectif.
+
+Changez-les à la première connexion — le nom en haut à droite mène à
+« Mon compte », qui porte le formulaire. Le changement ferme toutes les
+sessions ouvertes ailleurs.
 
 ```powershell
 docker compose logs -f identity   # journaux d'un service
