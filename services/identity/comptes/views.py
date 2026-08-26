@@ -11,6 +11,7 @@ Deux familles de routes :
 from __future__ import annotations
 
 import jwt
+from django.conf import settings
 from django.db.models import Prefetch
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -134,15 +135,45 @@ class Connexion(APIView):
             adresse_ip=_adresse(requete),
             agent=_agent(requete),
         )
-        message = (
-            "Ce compte est desactive. Contactez un administrateur."
-            if motif == "compte_inactif"
-            else "Identifiant ou mot de passe incorrect."
-        )
         return Response(
-            {"erreur": {"code": "authentification", "message": message, "details": {}}},
+            {
+                "erreur": {
+                    "code": "authentification",
+                    "message": self._message(identifiant, motif),
+                    "details": {},
+                }
+            },
             status=status.HTTP_401_UNAUTHORIZED,
         )
+
+    @staticmethod
+    def _message(identifiant: str, motif: str) -> str:
+        """Ce que l'on dit a celui qui n'entre pas.
+
+        En production, on ne distingue pas un identifiant inconnu d'un mot de
+        passe faux : la difference apprendrait a un inconnu quels comptes
+        existent, et c'est la premiere chose que cherche une attaque.
+
+        En developpement, cette prudence se retourne contre celui qui installe
+        l'ERP : il ne peut pas savoir s'il s'est trompe de compte ou de mot de
+        passe, et il essaie les deux au hasard. On le lui dit donc, et
+        seulement la.
+        """
+        if motif == "compte_inactif":
+            return "Ce compte est desactive. Contactez un administrateur."
+        if not settings.DEBUG:
+            return "Identifiant ou mot de passe incorrect."
+        if motif == "inconnu":
+            connus = list(
+                Utilisateur.objects.filter(est_actif=True)
+                .order_by("identifiant")
+                .values_list("identifiant", flat=True)[:3]
+            )
+            exemples = f" Comptes existants : {', '.join(connus)}..." if connus else ""
+            return (
+                f"Aucun compte ne porte l'identifiant « {identifiant} ».{exemples}"
+            )
+        return "Mot de passe incorrect pour ce compte."
 
 
 class Rafraichir(APIView):
