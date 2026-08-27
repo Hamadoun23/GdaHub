@@ -64,6 +64,17 @@ export default function AppLayout({ title, subtitle, actions, children }) {
 
                     <div className="flex items-center gap-2">
                         {actions}
+                        {/* Le retour au hub. Une adresse absolue et non un lien
+                            Inertia : l'accueil du hub est servi par une autre
+                            application, derriere la meme passerelle. */}
+                        <a
+                            href="/"
+                            title="Revenir a GDA Hub"
+                            className="hidden shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-sm font-medium text-gray-500 shadow-sm ring-1 ring-gray-200 transition hover:text-gray-900 sm:inline-flex"
+                        >
+                            <ArrowLeft size={15} />
+                            GDA Hub
+                        </a>
                         <div className="hidden items-center gap-2 sm:flex">
                             <div className="flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-sm text-gray-400 shadow-sm ring-1 ring-gray-200">
                                 <Search size={15} />

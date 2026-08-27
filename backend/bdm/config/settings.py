@@ -63,6 +63,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Tout en haut : il corrige les redirections en sortie, et doit donc voir
+    # passer celles de tous les middlewares qui suivent.
+    "core.prefixe.PrefixeDeService",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     # Avant le CSRF : celui-ci lit request.POST, qui doit déjà contenir le

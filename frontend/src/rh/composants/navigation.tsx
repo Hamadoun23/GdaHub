@@ -160,7 +160,19 @@ export function BarreSuperieure({ titre }: { titre?: string }) {
         <p className="truncate text-sm font-medium text-slate-700">{titre}</p>
       )}
 
-      <div className="relative ml-auto">
+      {/* Le retour au hub. Un lien complet et non un <Link> : l'accueil du hub
+          est une page de la coquille, hors du perimetre de cette
+          application. */}
+      <a
+        href="/"
+        title="Revenir a GDA Hub"
+        className="ml-auto hidden shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:inline-flex"
+      >
+        <span aria-hidden>&larr;</span>
+        GDA Hub
+      </a>
+
+      <div className="relative ml-auto sm:ml-0">
         <button
           type="button"
           onClick={() => setMenuOuvert((ouvert) => !ouvert)}

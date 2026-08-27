@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Menu, Search } from "lucide-react";
+import { ArrowLeft, Bell, Menu, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/jus/lib/auth";
 import { Input } from "@/jus/composants/ui/input";
@@ -20,8 +20,11 @@ import { SidebarContent } from "@/jus/composants/app/app-sidebar";
 import { navigation, roleMeta, type Role } from "@/jus/lib/nav";
 
 function currentRole(pathname: string): Role {
-  const seg = pathname.split("/").filter(Boolean)[0];
-  const match = navigation.find((g) => g.role === seg);
+  // Servie dans GDA Hub, l'application vit sous « /jus » : le premier segment
+  // est ce prefixe, et non la section. On cherche donc parmi tous les
+  // segments celui qui designe un espace.
+  const segments = pathname.split("/").filter(Boolean);
+  const match = navigation.find((g) => segments.includes(g.role));
   return (match?.role ?? "direction") as Role;
 }
 
@@ -33,8 +36,16 @@ export function AppHeader() {
   const role = currentRole(pathname);
   const meta = roleMeta[role];
 
-  const initials = (user?.username ?? "?")
+  const nomAffiche = user?.username ?? "—";
+  // Le compte peut etre nominatif (« hcisse@gdamali.net ») ou un compte de
+  // role (« resprod ») : on decoupe sur l'arobase et le point pour tirer deux
+  // initiales lisibles dans les deux cas.
+  const initials = nomAffiche
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
     .slice(0, 2)
+    .map((mot) => mot[0])
+    .join("")
     .toUpperCase();
 
   function onLogout() {
@@ -65,6 +76,18 @@ export function AppHeader() {
         <span className={`size-2 rounded-full ${meta.color}`} />
         Espace {meta.label}
       </div>
+
+      {/* Le retour au hub. Un lien et non un bouton : c'est une navigation,
+          et l'accueil du hub est une page de la coquille, hors du perimetre
+          de cette application. */}
+      <a
+        href="/"
+        title="Revenir a GDA Hub"
+        className="hidden shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground sm:inline-flex"
+      >
+        <ArrowLeft className="size-4" />
+        GDA Hub
+      </a>
 
       <div className="relative ml-auto w-full max-w-xs">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -97,7 +120,7 @@ export function AppHeader() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <div className="px-2 py-1.5 leading-tight">
-            <p className="text-sm font-medium">{user?.username ?? "—"}</p>
+            <p className="text-sm font-medium">{nomAffiche}</p>
             <p className="text-xs text-muted-foreground">
               {user?.is_superuser
                 ? "Administrateur"
