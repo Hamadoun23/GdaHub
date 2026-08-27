@@ -10,7 +10,13 @@ export default defineConfig(({ command }) => ({
     // base, Vite écrit des URL absolues en /assets/... dans le CSS et dans les
     // imports dynamiques des pages : polices et chunks partent en 404.
     // En développement, Vite sert depuis la racine de son propre serveur.
-    base: command === 'build' ? '/static/' : '/',
+    // En production a la racine, Django sert les assets sous /static/. Servie
+    // sous un chemin — /campagnes/ dans GDA Hub — c'est ce prefixe qu'il faut
+    // graver ici : Vite y ecrit les imports dynamiques du bundle, et lui seul
+    // sait ou les morceaux iront les chercher. Sans cela ils partent vers
+    // /static/assets/..., qui appartient a un autre service, et la page reste
+    // bloquee sur « Chargement de votre espace... ».
+    base: command === 'build' ? (process.env.VITE_BASE || '/static/') : '/',
     resolve: {
         alias: {
             '@': path.resolve(__dirname, 'src'),

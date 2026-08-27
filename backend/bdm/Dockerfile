@@ -11,6 +11,10 @@
 
 FROM node:24-alpine AS interface
 WORKDIR /build
+# Sous quel chemin les fichiers compiles seront servis. Vite le grave dans le
+# bundle : c'est de la que partent les imports dynamiques des pages.
+ARG VITE_BASE=/campagnes/static/
+ENV VITE_BASE=${VITE_BASE}
 COPY frontend/bdm/package*.json ./
 RUN npm ci
 COPY frontend/bdm/ ./

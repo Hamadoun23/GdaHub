@@ -8,7 +8,10 @@
     <title inertia>{{ app_name }}</title>
 
     {# PWA #}
-    <link rel="manifest" href="/site.webmanifest">
+    {# `url` plutot qu'un chemin ecrit en dur : servie sous /campagnes/,
+   l'adresse absolue tombait sur la coquille du hub, qui repondait du
+   HTML a la place du manifeste. #}
+    <link rel="manifest" href="{% url 'pwa.manifest' %}">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="{{ app_name }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
