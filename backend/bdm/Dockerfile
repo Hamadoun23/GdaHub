@@ -44,9 +44,14 @@ EXPOSE 8000
 
 FROM base AS developpement
 ENV DJANGO_DEBUG=True
-# Les migrations sont appliquees au demarrage : la base du hub part vide, et
-# une sauvegarde restauree par-dessus ne les rejoue pas.
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"]
+# `collectstatic` au demarrage, pas au build : c'est un volume partage avec
+# nginx qui porte les fichiers, et il survit aux reconstructions. Sans cette
+# etape le volume reste vide, et le JavaScript compile de l'interface repond
+# 404 — la page s'affiche sans rien dedans.
+#
+# Les migrations suivent : la base du hub part vide, et une sauvegarde
+# restauree par-dessus ne les rejoue pas.
+CMD ["sh", "-c", "python manage.py collectstatic --noinput --clear >/dev/null && python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"]
 
 FROM base AS production
 ENV DJANGO_DEBUG=False

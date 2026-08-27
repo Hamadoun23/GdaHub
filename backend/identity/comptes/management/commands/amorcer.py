@@ -117,7 +117,7 @@ APPLICATIONS = [
         "nom": "Campagnes",
         "groupe": METIER,
         "description": "Campagnes de cartes bancaires : ventes, enrolements, primes.",
-        "chemin": "/bdm/",
+        "chemin": "/campagnes/",
         "prefixe_api": "/api/bdm",
         "couleur": "#1d4ed8",
         "ordre": 20,

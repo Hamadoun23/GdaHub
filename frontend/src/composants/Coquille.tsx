@@ -66,10 +66,10 @@ export function Coquille({ children }: { children: React.ReactNode }) {
                       : "text-ardoise-500 hover:bg-ardoise-100 dark:hover:bg-ardoise-700"
                   }`;
 
-                  // BDM sert encore ses propres pages, hors du routeur de
-                  // Next : elle seule demande une navigation complete. Les
-                  // autres applications vivent dans cette interface.
-                  return cible.startsWith("/bdm") ? (
+                  // Campagnes sert encore ses propres pages, hors du routeur
+                  // de Next : elle seule demande une navigation complete.
+                  // Les autres applications vivent dans cette interface.
+                  return cible.startsWith("/campagnes") ? (
                     <a
                       key={application.code}
                       href={cible}

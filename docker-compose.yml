@@ -174,7 +174,12 @@ services:
       DB_NAME: bdm
       DB_USER: root
       DB_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
-      CHEMIN_BASE: /bdm
+      CHEMIN_BASE: /campagnes
+      # L'image embarque le front deja compile (npm run build). Sans ce
+      # drapeau, VITE_DEV suit DJANGO_DEBUG et la page va chercher son
+      # JavaScript sur http://localhost:5173 — un serveur de developpement
+      # qui ne tourne pas ici. Le navigateur repondait « connexion refusee ».
+      VITE_DEV: "False"
       # Sous une origine unique, deux Django qui posent « sessionid » se
       # deconnecteraient mutuellement a chaque navigation.
       SESSION_COOKIE_NAME: bdm_sessionid
