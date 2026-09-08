@@ -1,4 +1,4 @@
-import { cn } from "@/jus/lib/utils";
+import { cn } from "@/lib/cn";
 
 // Jauge radiale en SVG (style Tailark) : anneau de progression + valeur au centre.
 export function RadialGauge({

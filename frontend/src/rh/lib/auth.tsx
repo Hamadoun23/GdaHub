@@ -14,6 +14,39 @@ import { useRouter } from "next/navigation";
 import { appelApi, jetons } from "./api";
 import { ROLES_FINANCE, ROLES_RH, type Role, type Utilisateur } from "./types";
 
+/**
+ * TEMPORAIRE — voir le meme bloc dans `@/lib/session`. RH a sa propre
+ * session (API `/auth/profil/`, hors service en local pendant la refonte) :
+ * ce contournement lui est propre. A retirer en meme temps que celui de
+ * `@/lib/session`.
+ */
+const APERCU_SANS_AUTH = process.env.NODE_ENV !== "production";
+
+const UTILISATEUR_APERCU: Utilisateur = {
+  id: 0,
+  username: "apercu",
+  matricule: "APERCU",
+  first_name: "Apercu",
+  last_name: "Design",
+  nom_complet: "Apercu Design",
+  email: "apercu@gda.local",
+  telephone: "",
+  role: "DIRECTION",
+  role_libelle: "Direction",
+  poste: "Revue de la refonte visuelle",
+  departement: null,
+  departement_nom: "",
+  manager: null,
+  manager_nom: "",
+  type_contrat: "",
+  date_embauche: null,
+  date_sortie: null,
+  motif_sortie: "",
+  anciennete_mois: 0,
+  est_encadrant: true,
+  is_active: true,
+};
+
 interface ContexteAuth {
   utilisateur: Utilisateur | null;
   chargement: boolean;
@@ -44,8 +77,18 @@ export function FournisseurAuth({ children }: { children: ReactNode }) {
     // Ouverte seule, l'application n'y perd qu'une requete au premier
     // chargement : le profil repond 401 et l'ecran de connexion s'affiche
     // comme avant.
+    // En mode apercu, l'appel reel n'est meme pas tente : un 401 declenche un
+    // `location.href = "/connexion"` cote `appelApi` (rechargement complet
+    // volontaire, cf. sa propre note) qui court-circuiterait ce mock avant
+    // meme que le catch ci-dessous ne s'execute.
+    if (APERCU_SANS_AUTH) {
+      setUtilisateur(UTILISATEUR_APERCU);
+      setChargement(false);
+      return;
+    }
+
     try {
-      setUtilisateur(await appelApi<Utilisateur>("/auth/profil/"));
+      setUtilisateur(await appelApi<Utilisateur>("/auth/profil/", { racine: "auth" }));
     } catch {
       jetons.effacer();
       setUtilisateur(null);
@@ -69,6 +112,7 @@ export function FournisseurAuth({ children }: { children: ReactNode }) {
         methode: "POST",
         corps: { username, password: motDePasse },
         sansAuth: true,
+        racine: "auth",
       });
       jetons.enregistrer(reponse.access, reponse.refresh);
       setUtilisateur(reponse.utilisateur);

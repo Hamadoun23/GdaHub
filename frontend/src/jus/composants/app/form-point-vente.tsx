@@ -11,10 +11,10 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@/jus/composants/ui/sheet";
-import { Button } from "@/jus/composants/ui/button";
-import { Input } from "@/jus/composants/ui/input";
-import { Label } from "@/jus/composants/ui/label";
+} from "@/ui/sheet";
+import { Button } from "@/ui/button";
+import { Input } from "@/ui/input";
+import { Label } from "@/ui/label";
 import { SelectSimple } from "@/jus/composants/app/select-simple";
 import type { FormOptions, PointVente } from "@/jus/lib/api";
 import { STATUTS, coords, releverPosition } from "@/jus/lib/prospection";

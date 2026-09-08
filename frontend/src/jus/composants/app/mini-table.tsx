@@ -9,7 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/jus/composants/ui/card";
+} from "@/ui/card";
 import {
   Table,
   TableBody,
@@ -17,8 +17,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/jus/composants/ui/table";
-import { cn } from "@/jus/lib/utils";
+} from "@/ui/table";
+import { cn } from "@/lib/cn";
 import { fetchList } from "@/jus/lib/api";
 import type { Resource } from "@/jus/lib/types";
 

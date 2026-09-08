@@ -44,7 +44,7 @@ export default function PageRetards() {
     null,
   );
   const [selection, setSelection] = useState<DemandeAbsence | null>(null);
-  const demandes = useListe<DemandeAbsence>("/rh/demandes-absence/mes-demandes/");
+  const demandes = useListe<DemandeAbsence>("/demandes-absence/mes-demandes/");
 
   const retards = (demandes.donnees ?? []).filter(
     (demande) => demande.categorie === "RETARD",
@@ -154,7 +154,7 @@ export default function PageRetards() {
 
             <div className="border-t border-slate-100 pt-4">
               <ActionsCirculation
-                ressource="/rh/demandes-absence"
+                ressource="/demandes-absence"
                 document={selection}
                 estDemandeur={selection.demandeur === utilisateur?.id}
                 peutDecider={false}
@@ -207,18 +207,18 @@ function FormulaireRetard({
       };
 
       if (retard) {
-        await appelApi(`/rh/demandes-absence/${retard.id}/`, {
+        await appelApi(`/demandes-absence/${retard.id}/`, {
           methode: "PATCH",
           corps,
         });
         return;
       }
 
-      const creee = await appelApi<DemandeAbsence>("/rh/demandes-absence/", {
+      const creee = await appelApi<DemandeAbsence>("/demandes-absence/", {
         methode: "POST",
         corps,
       });
-      await appelApi(`/rh/demandes-absence/${creee.id}/soumettre/`, {
+      await appelApi(`/demandes-absence/${creee.id}/soumettre/`, {
         methode: "POST",
         corps: {},
       });

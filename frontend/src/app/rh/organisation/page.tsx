@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { Icone } from "@/rh/composants/icones";
 import {
   Alerte,
   Bouton,
@@ -84,17 +85,20 @@ export default function PageOrganisation() {
           valeur={departements.donnees?.length ?? 0}
           detail="Unites de l'organigramme"
           ton="marque"
+          icone={<Icone nom="equipe" />}
         />
         <TuileStat
           libelle="Agents actifs"
           valeur={agents.donnees?.length ?? 0}
           detail="Comptes ouverts"
+          icone={<Icone nom="profil" />}
         />
         <TuileStat
           libelle="Sans departement"
           valeur={groupes.orphelins.length}
           detail="Leurs demandes remontent au manager"
           ton={groupes.orphelins.length ? "alerte" : "succes"}
+          icone={<Icone nom="alerte" />}
         />
       </div>
 

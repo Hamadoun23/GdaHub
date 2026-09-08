@@ -73,6 +73,7 @@ def _profil(utilisateur: Utilisateur) -> dict:
             "email": utilisateur.email,
             "fonction": utilisateur.fonction,
             "est_superadmin": utilisateur.is_superuser,
+            "photo": utilisateur.photo.url if utilisateur.photo else None,
         },
         "habilitations": habilitations,
         "applications": [
@@ -266,6 +267,69 @@ class MonCompte(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(_profil(utilisateur))
+
+
+class PhotoDeProfil(APIView):
+    """Depot et retrait de la photo de profil.
+
+    Vue separee de MonCompte plutot qu'un champ de plus sur
+    UtilisateurEcritureSerializer : celle-ci est reservee aux administrateurs
+    et n'accepte que du JSON, alors qu'une photo part en multipart. Melanger
+    les deux aurait complique les deux cas sans en simplifier aucun.
+    """
+
+    permission_classes = [EstConnecte]
+
+    TAILLE_MAXIMALE = 5 * 1024 * 1024
+
+    def post(self, requete):
+        fichier = requete.FILES.get("photo")
+        if not fichier:
+            return self._erreur("Aucun fichier recu.", "Obligatoire.")
+        if not (fichier.content_type or "").startswith("image/"):
+            return self._erreur("Le fichier doit etre une image.", "Format non reconnu.")
+        if fichier.size > self.TAILLE_MAXIMALE:
+            return self._erreur("L'image depasse 5 Mo.", "Trop volumineuse.")
+
+        utilisateur = Utilisateur.objects.get(pk=requete.user.id)
+        # L'ancien fichier ne se remplace pas tout seul sur le disque : sans
+        # ce menage, chaque nouvelle photo laisserait la precedente derriere
+        # elle, orpheline. Le nom est capture a part plutot que gardee comme
+        # FieldFile : `FieldFile.delete()` reecrit aussi le champ sur
+        # l'instance qui le porte (c'est fait pour, dans son usage normal) —
+        # ici cette instance est la meme que celle qu'on vient de sauver avec
+        # la nouvelle photo, et l'appeler aurait efface la reponse tout en
+        # laissant la bonne valeur en base (constate : 200 avec `photo: null`
+        # malgre un fichier bien enregistre).
+        ancien_nom = utilisateur.photo.name if utilisateur.photo else None
+        utilisateur.photo = fichier
+        utilisateur.save(update_fields=["photo", "modifie_le"])
+        if ancien_nom:
+            utilisateur.photo.storage.delete(ancien_nom)
+        return Response(_profil(utilisateur))
+
+    def delete(self, requete):
+        utilisateur = Utilisateur.objects.get(pk=requete.user.id)
+        if utilisateur.photo:
+            nom = utilisateur.photo.name
+            stockage = utilisateur.photo.storage
+            utilisateur.photo = None
+            utilisateur.save(update_fields=["photo", "modifie_le"])
+            stockage.delete(nom)
+        return Response(_profil(utilisateur))
+
+    @staticmethod
+    def _erreur(message, detail):
+        return Response(
+            {
+                "erreur": {
+                    "code": "validation",
+                    "message": message,
+                    "details": {"photo": [detail]},
+                }
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class ChangerMotDePasse(APIView):

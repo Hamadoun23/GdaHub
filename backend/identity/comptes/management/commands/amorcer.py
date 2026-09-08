@@ -43,26 +43,15 @@ ADMINISTRATION = "Administration"
 #: application, sans rien dupliquer.
 APPLICATIONS = [
     # --- Board : le siege ------------------------------------------------
-    {
-        "code": "organisation",
-        "role_admin": "admin",
-        "nom": "Organisation",
-        "groupe": BOARD,
-        "description": "Organigramme : agents, departements, rattachements.",
-        "chemin": "/rh/annuaire",
-        "prefixe_api": "/api/organisation",
-        "couleur": "#0f766e",
-        "ordre": 10,
-        # « gestionnaire » edite l'organigramme, « lecture » ne voit que
-        # l'annuaire. L'encadrement n'est pas un role : il se deduit du
-        # rattachement d'un agent a un responsable, et c'est ce lien qui
-        # designe le premier valideur de chaque demande.
-        "roles_disponibles": [
-            {"code": "admin", "libelle": "Administrateur"},
-            {"code": "gestionnaire", "libelle": "Gestionnaire de l'organigramme"},
-            {"code": "lecture", "libelle": "Annuaire seul"},
-        ],
-    },
+    #
+    # « organisation » (organigramme/annuaire, /rh/annuaire) existait comme
+    # entree separee du catalogue, avec ses propres roles. Retiree a la
+    # demande explicite de l'utilisateur : quiconque a acces a « rh »
+    # atteint deja l'annuaire depuis le menu de FinanceRH lui-meme — un
+    # deuxieme bouton du hub vers le meme endroit n'ajoutait rien, seulement
+    # de la confusion pour qui, comme un super-admin, voit les deux a la
+    # fois. L'entree existante en base est desactivee, pas supprimee : les
+    # habilitations deja accordees restent tracees.
     {
         "code": "rh",
         "role_admin": "gestionnaire",
@@ -112,13 +101,15 @@ APPLICATIONS = [
     },
     # --- Les quatre applications metier ----------------------------------
     {
-        "code": "bdm",
+        # BDM (la banque) n'est qu'un des clients de cette application de
+        # gestion de campagnes — le code ne doit pas porter son nom.
+        "code": "campagnes",
         "role_admin": "admin",
         "nom": "Campagnes",
         "groupe": METIER,
         "description": "Campagnes de cartes bancaires : ventes, enrolements, primes.",
         "chemin": "/campagnes/",
-        "prefixe_api": "/api/bdm",
+        "prefixe_api": "/api/campagnes",
         "couleur": "#1d4ed8",
         "ordre": 20,
         "roles_disponibles": [
@@ -153,10 +144,9 @@ APPLICATIONS = [
         "groupe": METIER,
         "description": "Suivi de chantier : avancement, photos, rapport journalier.",
         "chemin": "/chantiers",
-        # Inactive tant que l'application reelle n'est pas rassemblee.
-        # Le travail du stagiaire doit d'abord etre repris et corrige ;
-        # d'ici la, une entree de menu ne menerait nulle part.
-        "active": False,
+        # Le service existe desormais (backend/chantiers), repris et corrige
+        # du travail du stagiaire : cf. PLAN.md, etape 5.
+        "active": True,
         "prefixe_api": "/api/daily",
         "couleur": "#b45309",
         "ordre": 22,
@@ -175,10 +165,7 @@ APPLICATIONS = [
         "groupe": METIER,
         "description": "Publications, tournages et rapports clients.",
         "chemin": "/planning",
-        # Inactive tant que l'application reelle n'est pas rassemblee.
-        # Le travail du stagiaire doit d'abord etre repris et corrige ;
-        # d'ici la, une entree de menu ne menerait nulle part.
-        "active": False,
+        "active": True,
         "prefixe_api": "/api/planning",
         "couleur": "#7c3aed",
         "ordre": 23,

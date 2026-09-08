@@ -1,0 +1,14 @@
+{
+  "name": "gdahub-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tests de bout en bout de GDA Hub : les parcours reels, a travers la passerelle.",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "rapport": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}

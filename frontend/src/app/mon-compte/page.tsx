@@ -13,11 +13,12 @@
  * de son sens.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Coquille } from "@/composants/Coquille";
 import { Information } from "@/composants/metier";
+import { initialesDepuis } from "@/composants/coquille-app/initiales";
 import {
   Alerte,
   Badge,
@@ -26,6 +27,7 @@ import {
   Champ,
   Grille,
 } from "@/composants/ui";
+import type { Profil } from "@/lib/api";
 import { useAction } from "@/lib/ressources";
 import { useSession } from "@/lib/session";
 
@@ -47,12 +49,14 @@ function Contenu() {
     <>
       <div className="mb-6">
         <h1 className="text-xl font-semibold tracking-tight">Mon compte</h1>
-        <p className="mt-1 text-sm text-ardoise-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Vos coordonnées, vos habilitations et votre mot de passe.
         </p>
       </div>
 
       <div className="space-y-6">
+        <CartePhoto />
+
         <Carte titre="Identité">
           <Grille colonnes={2}>
             <Information libelle="Nom" valeur={utilisateur.nom_complet} />
@@ -83,10 +87,10 @@ function Contenu() {
               >
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: application.couleur || "#0f766e" }}
+                  style={{ backgroundColor: application.couleur || "var(--color-marque)" }}
                 />
                 <span className="min-w-44 font-medium">{application.nom}</span>
-                <span className="text-ardoise-500">
+                <span className="text-muted-foreground">
                   {application.roles.length
                     ? application.roles.join(", ")
                     : "consultation"}
@@ -99,6 +103,102 @@ function Contenu() {
         <FormulaireMotDePasse onChange={deconnecter} />
       </div>
     </>
+  );
+}
+
+function CartePhoto() {
+  const { profil, requete, actualiserProfil } = useSession();
+  const action = useAction();
+  const [previsualisation, setPrevisualisation] = useState<string | null>(null);
+  const entreeFichier = useRef<HTMLInputElement>(null);
+
+  if (!profil) return null;
+  const { utilisateur } = profil;
+
+  const deposer = async (evenement: React.ChangeEvent<HTMLInputElement>) => {
+    const fichier = evenement.target.files?.[0];
+    evenement.target.value = "";
+    if (!fichier) return;
+
+    // Aperçu immédiat pendant l'envoi, plutôt que de laisser l'ancienne photo
+    // (ou les initiales) le temps que le service réponde.
+    const objetUrl = URL.createObjectURL(fichier);
+    setPrevisualisation(objetUrl);
+
+    const corps = new FormData();
+    corps.append("photo", fichier);
+    const succes = await action.executer(async () => {
+      const nouveauProfil = await requete<Profil>("/identity/auth/moi/photo", {
+        methode: "POST",
+        corps,
+      });
+      actualiserProfil(nouveauProfil);
+    });
+    URL.revokeObjectURL(objetUrl);
+    setPrevisualisation(null);
+    if (!succes) return;
+  };
+
+  const retirer = async () => {
+    await action.executer(async () => {
+      const nouveauProfil = await requete<Profil>("/identity/auth/moi/photo", {
+        methode: "DELETE",
+      });
+      actualiserProfil(nouveauProfil);
+    });
+  };
+
+  const src = previsualisation || utilisateur.photo;
+
+  return (
+    <Carte
+      titre="Photo de profil"
+      sousTitre="Affichée dans l'en-tête et le menu de compte, sur toutes les applications du hub."
+    >
+      <div className="flex items-center gap-4">
+        <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ardoise-100 text-lg font-semibold text-ardoise-600 dark:bg-ardoise-700 dark:text-ardoise-200">
+          {src ? (
+            // eslint-disable-next-line @next/next/no-img-element -- taille fixe, un simple aperçu.
+            <img src={src} alt="" className="size-full object-cover" />
+          ) : (
+            initialesDepuis(utilisateur.nom_complet || utilisateur.identifiant)
+          )}
+        </div>
+        <div className="flex flex-col items-start gap-2">
+          {action.erreur ? <Alerte>{action.erreur}</Alerte> : null}
+          <div className="flex gap-2">
+            <Bouton
+              type="button"
+              variante="secondaire"
+              taille="petite"
+              onClick={() => entreeFichier.current?.click()}
+              disabled={action.enCours}
+            >
+              {action.enCours ? "Envoi..." : utilisateur.photo ? "Changer la photo" : "Ajouter une photo"}
+            </Bouton>
+            {utilisateur.photo ? (
+              <Bouton
+                type="button"
+                variante="discret"
+                taille="petite"
+                onClick={retirer}
+                disabled={action.enCours}
+              >
+                Retirer
+              </Bouton>
+            ) : null}
+          </div>
+          <p className="text-xs text-muted-foreground">JPG ou PNG, 5 Mo maximum.</p>
+        </div>
+      </div>
+      <input
+        ref={entreeFichier}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={deposer}
+      />
+    </Carte>
   );
 }
 

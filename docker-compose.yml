@@ -30,7 +30,7 @@ x-django: &django
   environment: &env-django
     DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-developpement-local-non-secret}
     DJANGO_DEBUG: "True"
-    DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,gateway,identity,financerh,jusorange,bdm
+    DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,gateway,identity,financerh,jusorange,campagnes,chantiers,planning
     DJANGO_TIME_ZONE: Africa/Bamako
     GDAHUB_JWKS_URL: http://identity:8000/.well-known/jwks.json
     GDAHUB_JETON_EMETTEUR: gdahub-identity
@@ -71,16 +71,36 @@ services:
     ports: ["127.0.0.1:5443:5432"]
     volumes: ["donnees-jusorange:/var/lib/postgresql/data"]
 
-  db-bdm:
+  db-chantiers:
+    <<: *postgres
+    container_name: gdahub-db-chantiers
+    environment:
+      POSTGRES_USER: chantiers
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
+      POSTGRES_DB: chantiers
+    ports: ["127.0.0.1:5444:5432"]
+    volumes: ["donnees-chantiers:/var/lib/postgresql/data"]
+
+  db-planning:
+    <<: *postgres
+    container_name: gdahub-db-planning
+    environment:
+      POSTGRES_USER: planning
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
+      POSTGRES_DB: planning
+    ports: ["127.0.0.1:5445:5432"]
+    volumes: ["donnees-planning:/var/lib/postgresql/data"]
+
+  db-campagnes:
     image: mysql:8.0
-    container_name: gdahub-db-bdm
+    container_name: gdahub-db-campagnes
     restart: unless-stopped
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
-      MYSQL_DATABASE: bdm
+      MYSQL_DATABASE: campagnes
     ports: ["127.0.0.1:3306:3306"]
-    volumes: ["donnees-bdm-mysql:/var/lib/mysql"]
+    volumes: ["donnees-campagnes-mysql:/var/lib/mysql"]
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
@@ -104,6 +124,9 @@ services:
       GDAHUB_APPLICATION: hub
       DATABASE_URL: postgres://gdahub:${POSTGRES_PASSWORD:-gdahub-local}@db-identity:5432/identity
       CSRF_TRUSTED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+      # Les photos de profil sont servies en adresse absolue : sans ce
+      # prefixe, elles pointeraient hors du perimetre de l'application.
+      MEDIA_URL: /media/hub/
     volumes:
       - ./backend/identity:/app
       - ./libs/gdahub_common:/libs/gdahub_common
@@ -155,23 +178,62 @@ services:
       - media-jusorange:/app/media
     ports: ["127.0.0.1:8120:8000"]
 
-  bdm:
+  chantiers:
     <<: *django
     build:
-      # La racine du depot : l'image a besoin du backend et du front de BDM,
-      # qui vivent dans deux dossiers differents.
-      context: .
-      dockerfile: backend/bdm/Dockerfile
+      context: ./backend/chantiers
       target: developpement
-    container_name: gdahub-bdm
+    container_name: gdahub-chantiers
     depends_on:
-      db-bdm: {condition: service_healthy}
+      db-chantiers: {condition: service_healthy}
       identity: {condition: service_started}
     environment:
       <<: *env-django
-      DB_HOST: db-bdm
+      DATABASE_URL: postgres://chantiers:${POSTGRES_PASSWORD:-gdahub-local}@db-chantiers:5432/chantiers
+      MEDIA_URL: /media/chantiers/
+    volumes:
+      - ./backend/chantiers:/app
+      - media-chantiers:/app/media
+    ports: ["127.0.0.1:8140:8000"]
+
+  planning:
+    <<: *django
+    build:
+      context: ./backend/planning
+      target: developpement
+    container_name: gdahub-planning
+    depends_on:
+      db-planning: {condition: service_healthy}
+      identity: {condition: service_started}
+    environment:
+      <<: *env-django
+      DATABASE_URL: postgres://planning:${POSTGRES_PASSWORD:-gdahub-local}@db-planning:5432/planning
+      MEDIA_URL: /media/planning/
+    volumes:
+      - ./backend/planning:/app
+      - media-planning:/app/media
+    ports: ["127.0.0.1:8150:8000"]
+
+  # BDM (la banque) n'est qu'un des clients servis par cette application de
+  # gestion de campagnes — le service porte donc le nom de l'application,
+  # pas celui de son premier client.
+  campagnes:
+    <<: *django
+    build:
+      # La racine du depot : l'image a besoin du backend et du front de
+      # Campagnes, qui vivent dans deux dossiers differents.
+      context: .
+      dockerfile: backend/campagnes/Dockerfile
+      target: developpement
+    container_name: gdahub-campagnes
+    depends_on:
+      db-campagnes: {condition: service_healthy}
+      identity: {condition: service_started}
+    environment:
+      <<: *env-django
+      DB_HOST: db-campagnes
       DB_PORT: "3306"
-      DB_NAME: bdm
+      DB_NAME: campagnes
       DB_USER: root
       DB_PASSWORD: ${POSTGRES_PASSWORD:-gdahub-local}
       CHEMIN_BASE: /campagnes
@@ -182,12 +244,12 @@ services:
       VITE_DEV: "False"
       # Sous une origine unique, deux Django qui posent « sessionid » se
       # deconnecteraient mutuellement a chaque navigation.
-      SESSION_COOKIE_NAME: bdm_sessionid
-      CSRF_COOKIE_NAME: bdm_csrftoken
+      SESSION_COOKIE_NAME: campagnes_sessionid
+      CSRF_COOKIE_NAME: campagnes_csrftoken
     volumes:
-      - ./backend/bdm:/app
-      - media-bdm-app:/app/media
-      - statiques-bdm:/app/staticfiles
+      - ./backend/campagnes:/app
+      - media-campagnes-app:/app/media
+      - statiques-campagnes:/app/staticfiles
     ports: ["127.0.0.1:8130:8000"]
 
   # --- L'interface, unique ------------------------------------------------
@@ -221,7 +283,7 @@ services:
     image: nginx:1.29-alpine
     container_name: gdahub-gateway
     restart: unless-stopped
-    depends_on: [identity, financerh, jusorange, bdm, frontend]
+    depends_on: [identity, financerh, jusorange, chantiers, planning, campagnes, frontend]
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./gateway/entetes-proxy.conf:/etc/nginx/entetes-proxy.conf:ro
@@ -229,8 +291,11 @@ services:
       # ecrit aucun.
       - media-financerh:/var/media/rh:ro
       - media-jusorange:/var/media/jus:ro
-      - media-bdm-app:/var/media/bdm:ro
-      - statiques-bdm:/var/statiques/bdm:ro
+      - media-chantiers:/var/media/chantiers:ro
+      - media-planning:/var/media/planning:ro
+      - media-campagnes-app:/var/media/campagnes:ro
+      - statiques-campagnes:/var/statiques/campagnes:ro
+      - media-identity:/var/media/identity:ro
     ports: ["127.0.0.1:8080:80"]
 
 volumes:
@@ -238,9 +303,13 @@ volumes:
   donnees-identity:
   donnees-financerh:
   donnees-jusorange:
-  donnees-bdm-mysql:
+  donnees-chantiers:
+  donnees-planning:
+  donnees-campagnes-mysql:
   media-identity:
   media-financerh:
   media-jusorange:
-  media-bdm-app:
-  statiques-bdm:
+  media-chantiers:
+  media-planning:
+  media-campagnes-app:
+  statiques-campagnes:

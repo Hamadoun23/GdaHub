@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Navigation } from "lucide-react";
-import { buttonVariants } from "@/jus/composants/ui/button";
+import { buttonVariants } from "@/ui/button";
 import { estAppareilApple, lienItineraire } from "@/jus/lib/prospection";
-import { cn } from "@/jus/lib/utils";
+import { cn } from "@/lib/cn";
 
 /**
  * Bouton « Itinéraire » : ouvre l'application de navigation du téléphone,

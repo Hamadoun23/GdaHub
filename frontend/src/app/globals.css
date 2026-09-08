@@ -14,18 +14,20 @@
    ========================================================================= */
 
 /* --- Socle du hub ------------------------------------------------------- */
-/* Palette de GDA Hub. Le shell est volontairement neutre : ce sont les
-   applications qui portent la couleur, chacune la sienne, servie par identity
-   avec le catalogue. */
+/* Palette de GDA Hub. La coquille elle-meme (barre du haut, page d'accueil,
+   mon-compte, administration) porte desormais la charte GDA — l'orange de
+   marque — plutot qu'un teal invente : ce n'etait pas une couleur neutre
+   choisie exprès, juste un reste d'avant que la charte n'existe dans ce
+   depot. `--color-ardoise-*` n'est pas repetee ici : la seule definition qui
+   compte est celle du bloc « FinanceRH » plus bas, sur les memes noms de
+   variable — CSS ne garde que la derniere, donc en avoir une deuxieme ici
+   n'aurait fait qu'entretenir la confusion sans rien changer a l'ecran.
+   `--color-marque-700` (le nuance sombre, 4,80:1 sur blanc) sert de defaut :
+   l'orange pur (#ff6a3a, 2,85:1) reste reserve aux survols et aux aplats,
+   jamais au texte. */
 @theme {
-  --color-ardoise-50: #f8fafc;
-  --color-ardoise-100: #f1f5f9;
-  --color-ardoise-200: #e2e8f0;
-  --color-ardoise-500: #64748b;
-  --color-ardoise-700: #334155;
-  --color-ardoise-900: #0f172a;
-  --color-marque: #0f766e;
-  --color-marque-clair: #14b8a6;
+  --color-marque: var(--color-marque-700);
+  --color-marque-clair: var(--color-marque-500);
 }
 
 :root {
@@ -103,7 +105,17 @@ body {
   --color-slate-900: #2c2d2e;
   --color-slate-950: #1c1d1e;
 
-  --font-sans: var(--police-sans), ui-sans-serif, system-ui, sans-serif;
+  /* `--police-sans` n'a jamais ete definie nulle part dans ce depot : un
+     `var()` sans repli, sur une variable absente, invalide toute la
+     declaration — pas seulement ce segment — et `font-sans` retombait
+     alors sur le serif par defaut du navigateur, partout dans le hub. Peu
+     visible sur du texte courant, cela sautait aux yeux sur les gros titres
+     en majuscules. Une pile systeme directe ne depend d'aucun telechargement
+     (utile ici : ce conteneur n'a pas toujours acces a Google Fonts) et
+     rend une police sans-serif nette sur toutes les plateformes.
+     Corrige ici plutot que dans le layout : le reste du hub s'appuie sur
+     cette meme variable via `@theme inline` plus bas. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 :root {
@@ -119,6 +131,9 @@ body {
   --ombre-carte: 0 1px 2px rgb(28 29 30 / 0.04), 0 1px 3px rgb(28 29 30 / 0.06);
   --ombre-flottante: 0 10px 30px -12px rgb(28 29 30 / 0.22);
   --anneau-focus: 0 0 0 3px rgb(255 106 58 / 0.28);
+  /* Ombre suspendue : panneaux sombres et elements en survol prononce —
+     plus diffuse et plus profonde que --ombre-flottante. */
+  --ombre-suspendue: 0 30px 80px -20px rgb(0 0 0 / 0.5);
 }
 
 * {
@@ -159,13 +174,13 @@ body {
 @utility carte {
   background: var(--surface);
   border: 1px solid var(--bordure);
-  border-radius: 0.875rem;
+  border-radius: 1.25rem;
   box-shadow: var(--ombre-carte);
 }
 
 @utility champ {
   width: 100%;
-  border-radius: 0.625rem;
+  border-radius: 0.85rem;
   border: 1px solid var(--bordure);
   background: var(--surface);
   padding: 0.55rem 0.8rem;
@@ -209,6 +224,42 @@ body {
   border-radius: 0.75rem;
   padding: 0.5rem 0.7rem;
   box-shadow: var(--ombre-carte);
+}
+
+/* ------------------------------------------------------------------
+   Grain et verre — vocabulaire visuel des panneaux premium (connexion,
+   volets de mise en scene). Un bruit fin en feTurbulence, jamais une image
+   a charger, et un flou depoli qui laisse deviner le degrade dessous.
+------------------------------------------------------------------- */
+
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+
+/* z-index negatif plutot qu'une promotion des enfants en z-index positif :
+   `isolation: isolate` cree deja un contexte d'empilement propre a .grain,
+   donc ce pseudo-element reste sous TOUT le contenu sans qu'il faille
+   toucher au positionnement de chaque enfant (un enfant en `absolute`,
+   comme les degrades de mise en scene, ne doit jamais etre repasse en
+   `relative` par une regle globale). */
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@utility verre {
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  box-shadow: var(--ombre-suspendue);
 }
 
 @keyframes apparition {
@@ -363,8 +414,16 @@ body {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Pas de `--font-sans: var(--font-sans);` ici : ecrite ainsi (heritee
+     d'un gabarit shadcn qui attendait une police chargee par next/font sur
+     <html>), Tailwind la compile en `:root { --font-sans: var(--font-sans) }`
+     — une reference circulaire bien reelle dans le CSS final, qui rendait
+     la variable invalide et faisait retomber tout le hub sur le serif par
+     defaut du navigateur. La definition valide vient du bloc `@theme` plus
+     haut ; la repeter ici ne ferait que la casser a nouveau. */
+  /* `--font-geist-mono` n'est plus chargee non plus : une pile monospace
+     systeme, sans dependance reseau. */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -435,7 +494,13 @@ body {
   --chart-3: #1baf7a; /* aqua */
   --chart-4: #4a3aa7; /* violet */
   --chart-5: #eda100; /* jaune */
-  --radius: 0.7rem;
+  /* Rayons plus genereux (etait 0.7rem) pour se rapprocher des cartes
+     tres arrondies de la reference "Virtus" (rounded-2xl/3xl). Toutes les
+     echelles --radius-sm..4xl derivent de cette seule valeur ci-dessous
+     (voir @theme inline plus haut) : la faire varier suffit a rearrondir
+     `rounded-lg`/`xl`/`2xl`/`3xl` dans tout le hub, sans toucher au
+     contraste ni a la palette de graphiques. */
+  --radius: 0.85rem;
   --sidebar: oklch(0.985 0.004 70);
   --sidebar-foreground: oklch(0.28 0.02 50);
   --sidebar-primary: oklch(0.705 0.191 47.6);

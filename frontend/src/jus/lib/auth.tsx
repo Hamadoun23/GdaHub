@@ -14,6 +14,24 @@ import {
   me as apiMe,
 } from "@/jus/lib/api";
 
+/**
+ * TEMPORAIRE — voir le meme bloc dans `@/lib/session`. Jus d'orange a sa
+ * propre session (API `/auth/me/`, hors service en local pendant la
+ * refonte) : ce contournement lui est propre. `is_superuser: true` pour que
+ * `canAccess`/`roleHome` (jus/lib/access.ts) laissent voir toutes les
+ * sections. A retirer en meme temps que celui de `@/lib/session`.
+ */
+const APERCU_SANS_AUTH = process.env.NODE_ENV !== "production";
+
+const USER_APERCU: AuthUser = {
+  id: 0,
+  username: "apercu",
+  email: "apercu@gda.local",
+  is_staff: true,
+  is_superuser: true,
+  roles: ["Direction"],
+};
+
 type AuthState = {
   user: AuthUser | null;
   loading: boolean;
@@ -41,7 +59,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // avant.
     apiMe()
       .then(setUser)
-      .catch(() => clearToken())
+      .catch(() => {
+        clearToken();
+        if (APERCU_SANS_AUTH) setUser(USER_APERCU);
+      })
       .finally(() => setLoading(false));
   }, []);
 

@@ -13,6 +13,8 @@ from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import path, include
 
+from .sante import sante
+
 
 def racine(request):
     """Renvoie vers le frontend.
@@ -27,6 +29,8 @@ def racine(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Sonde de vie, lue par la passerelle de GDA Hub sous « /sante/jus ».
+    path('sante', sante, name='sante'),
     path('api/', include('api.urls')),
     # login / logout / password-reset (templates dans templates/auth/)
     path('', include('accounts.urls')),

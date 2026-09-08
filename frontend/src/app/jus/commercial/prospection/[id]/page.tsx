@@ -17,8 +17,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/jus/composants/ui/button";
-import { Card } from "@/jus/composants/ui/card";
+import { Button } from "@/ui/button";
+import { Card } from "@/ui/card";
 import { PageHeader } from "@/jus/composants/app/page-header";
 import { StatusBadge } from "@/jus/composants/app/status-badge";
 import { FormSheet } from "@/jus/composants/app/form-sheet";
@@ -44,7 +44,7 @@ import { FRAICHEUR_OPTIONS_MS, invaliderPrefixe, useDonnees } from "@/jus/lib/ca
 import { frDate, xof } from "@/jus/lib/format";
 import { coords, dateHeure, metaStatut } from "@/jus/lib/prospection";
 import type { Field } from "@/jus/lib/types";
-import { cn } from "@/jus/lib/utils";
+import { cn } from "@/lib/cn";
 
 const CHAMPS_CONVERSION: Field[] = [
   { name: "nom_complet", label: "Nom du client", type: "text", colSpan: 2, hint: "Vide : le nom du point de vente est repris." },

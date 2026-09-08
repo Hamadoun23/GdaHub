@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { Icone } from "@/rh/composants/icones";
 import {
   Alerte,
   Carte,
@@ -47,10 +48,12 @@ export default function PageAnnuaire() {
           valeur={agents.donnees?.length ?? 0}
           detail="Sur le perimetre filtre"
           ton="marque"
+          icone={<Icone nom="profil" />}
         />
         <TuileStat
           libelle="Departements"
           valeur={departements.donnees?.length ?? 0}
+          icone={<Icone nom="equipe" />}
         />
         <TuileStat
           libelle="Back-office"
@@ -59,6 +62,7 @@ export default function PageAnnuaire() {
           }
           detail="RH, Finance et Direction"
           ton="info"
+          icone={<Icone nom="indicateur" />}
         />
       </div>
 

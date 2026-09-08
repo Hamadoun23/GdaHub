@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { Icone } from "@/rh/composants/icones";
 import { ActionsCirculation, BadgeStatut, CircuitValidation } from "@/rh/composants/metier";
 import {
   Alerte,
@@ -28,9 +29,9 @@ import type { DemandeAbsence, SoldeConge, TypeAbsence } from "@/rh/lib/types";
 type Onglet = "mes-demandes" | "a-valider" | "toutes";
 
 const CHEMINS: Record<Onglet, string> = {
-  "mes-demandes": "/rh/demandes-absence/mes-demandes/",
-  "a-valider": "/rh/demandes-absence/a-valider/",
-  toutes: "/rh/demandes-absence/",
+  "mes-demandes": "/demandes-absence/mes-demandes/",
+  "a-valider": "/demandes-absence/a-valider/",
+  toutes: "/demandes-absence/",
 };
 
 export default function PageAbsences() {
@@ -43,8 +44,8 @@ export default function PageAbsences() {
   );
   const [selection, setSelection] = useState<DemandeAbsence | null>(null);
 
-  const types = useListe<TypeAbsence>("/rh/types-absence/?actif=true");
-  const solde = useRessource<SoldeConge>("/rh/soldes-conges/mon-solde/");
+  const types = useListe<TypeAbsence>("/types-absence/?actif=true");
+  const solde = useRessource<SoldeConge>("/soldes-conges/mon-solde/");
   const demandes = useListe<DemandeAbsence>(CHEMINS[onglet]);
   const aValider = useListe<DemandeAbsence>(CHEMINS["a-valider"]);
 
@@ -111,6 +112,7 @@ export default function PageAbsences() {
             max: acquis || 1,
           }}
           detail={`${nombre(solde.donnees?.jours_pris, 1)} pris sur ${nombre(acquis, 1)} acquis`}
+          icone={<Icone nom="conge" />}
         />
         {peutValider && (
           <div className="sm:col-span-2">
@@ -237,7 +239,7 @@ export default function PageAbsences() {
 
             <div className="border-t border-slate-100 pt-4">
               <ActionsCirculation
-                ressource="/rh/demandes-absence"
+                ressource="/demandes-absence"
                 document={selection}
                 estDemandeur={selection.demandeur === utilisateur?.id}
                 peutDecider={(aValider.donnees ?? []).some(
@@ -313,18 +315,18 @@ function FormulaireDemande({
       if (justificatif) donnees.append("justificatif", justificatif);
 
       if (demande) {
-        await appelApi(`/rh/demandes-absence/${demande.id}/`, {
+        await appelApi(`/demandes-absence/${demande.id}/`, {
           methode: "PATCH",
           fichiers: donnees,
         });
         return;
       }
 
-      const creee = await appelApi<DemandeAbsence>("/rh/demandes-absence/", {
+      const creee = await appelApi<DemandeAbsence>("/demandes-absence/", {
         methode: "POST",
         fichiers: donnees,
       });
-      await appelApi(`/rh/demandes-absence/${creee.id}/soumettre/`, {
+      await appelApi(`/demandes-absence/${creee.id}/soumettre/`, {
         methode: "POST",
         corps: {},
       });

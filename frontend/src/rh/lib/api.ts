@@ -16,6 +16,27 @@ import type { ReponsePaginee } from "./types";
  */
 export const BASE_API = process.env.NEXT_PUBLIC_API_RH ?? "/api/rh";
 
+/**
+ * L'authentification n'est prefixee ni par « rh » ni par « finance » : les
+ * deux domaines vivent dans le meme service Django, et `accounts.urls` (qui
+ * porte connexion/profil/rafraichissement) est monte sous `/api/`, pas sous
+ * `/api/rh/` — cf. `backend/financerh/config/urls.py`. Utiliser `BASE_API`
+ * pour ces trois appels envoyait `/api/rh/auth/profil/`, une adresse qui
+ * n'existe pas cote serveur (404 constate), et laissait l'ecran d'ouverture
+ * de l'application bloque plutot que d'entrer ou de renvoyer a la connexion.
+ */
+const BASE_API_AUTH = "/api";
+
+/**
+ * Le domaine Finance vit dans le meme service Django que RH, mais sous son
+ * propre prefixe racine (`path("api/finance/", include("finance.urls"))`),
+ * pas sous `/api/rh/finance/`. Les ecrans partages entre les deux domaines
+ * (mes demandes, historique, validations, tableau de bord) melangent des
+ * ressources RH (demandes d'absence) et Finance (depenses) sur le meme
+ * ecran : chaque appel doit dire lequel des deux il vise.
+ */
+const BASE_API_FINANCE = "/api/finance";
+
 const CLE_ACCES = "gda_acces";
 const CLE_RAFRAICHISSEMENT = "gda_rafraichissement";
 
@@ -56,7 +77,11 @@ export class ErreurApi extends Error {
     let message = `Erreur ${statut}`;
 
     if (typeof corps === "string" && corps) {
-      return { message: corps, champs };
+      // Une reponse non-JSON (page d'erreur HTML du serveur de dev quand
+      // l'API n'est pas joignable, par exemple) ne doit jamais s'afficher
+      // telle quelle a l'ecran.
+      const ressembleAHtml = /^\s*<(!doctype|html)/i.test(corps);
+      return { message: ressembleAHtml ? `Erreur ${statut}` : corps, champs };
     }
     if (corps && typeof corps === "object") {
       const donnees = corps as Record<string, unknown>;
@@ -91,7 +116,7 @@ async function rafraichirJeton(): Promise<string | null> {
 
   rafraichissementEnCours ??= (async () => {
     try {
-      const reponse = await fetch(`${BASE_API}/auth/refresh/`, {
+      const reponse = await fetch(`${BASE_API_AUTH}/auth/refresh/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh }),
@@ -114,20 +139,27 @@ interface OptionsRequete {
   /** Envoi multipart pour les justificatifs. */
   fichiers?: FormData;
   sansAuth?: boolean;
+  /** `"auth"` pour les trois routes de `accounts.urls` (connexion, profil,
+   * rafraichissement), montees hors du prefixe `rh`/`finance` — cf. la note
+   * sur `BASE_API_AUTH` plus haut. `"finance"` pour les ressources du domaine
+   * Finance (depenses, requisitions...) — cf. la note sur `BASE_API_FINANCE`. */
+  racine?: "rh" | "auth" | "finance";
 }
 
 export async function appelApi<T = unknown>(
   chemin: string,
   options: OptionsRequete = {},
 ): Promise<T> {
-  const { methode = "GET", corps, fichiers, sansAuth } = options;
+  const { methode = "GET", corps, fichiers, sansAuth, racine = "rh" } = options;
+  const base =
+    racine === "auth" ? BASE_API_AUTH : racine === "finance" ? BASE_API_FINANCE : BASE_API;
 
   const executer = async (jeton: string | null): Promise<Response> => {
     const entetes: Record<string, string> = {};
     if (!fichiers) entetes["Content-Type"] = "application/json";
     if (jeton) entetes.Authorization = `Bearer ${jeton}`;
 
-    return fetch(`${BASE_API}${chemin}`, {
+    return fetch(`${base}${chemin}`, {
       method: methode,
       headers: entetes,
       body: fichiers ?? (corps === undefined ? undefined : JSON.stringify(corps)),
@@ -183,7 +215,10 @@ export function versParametres(
 }
 
 /** Recupere une liste paginee et renvoie directement les resultats. */
-export async function listerTout<T>(chemin: string): Promise<T[]> {
-  const donnees = await appelApi<ReponsePaginee<T> | T[]>(chemin);
+export async function listerTout<T>(
+  chemin: string,
+  options: { racine?: "rh" | "finance" } = {},
+): Promise<T[]> {
+  const donnees = await appelApi<ReponsePaginee<T> | T[]>(chemin, options);
   return Array.isArray(donnees) ? donnees : donnees.results;
 }

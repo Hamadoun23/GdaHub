@@ -170,7 +170,7 @@ export function Bouton({
       {...reste}
       disabled={reste.disabled || chargement}
       className={cx(
-        "rounded-md font-medium transition disabled:opacity-60",
+        "rounded-xl font-medium transition disabled:opacity-60",
         variantes[variante],
         tailles[taille],
         className,
@@ -230,7 +230,7 @@ export function Champ({
         {...reste}
         list={identifiantListe}
         className={cx(
-          "w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:border-marque",
+          "w-full rounded-xl border bg-transparent px-3 py-2.5 text-sm outline-none transition-colors focus:border-marque focus:ring-2 focus:ring-marque/15",
           erreurs?.length
             ? "border-red-400"
             : "border-ardoise-200 dark:border-ardoise-700",
@@ -272,7 +272,7 @@ export function ZoneTexte({
         {...reste}
         rows={reste.rows ?? 3}
         className={cx(
-          "w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:border-marque",
+          "w-full rounded-xl border bg-transparent px-3 py-2.5 text-sm outline-none transition-colors focus:border-marque focus:ring-2 focus:ring-marque/15",
           erreurs?.length
             ? "border-red-400"
             : "border-ardoise-200 dark:border-ardoise-700",
@@ -306,7 +306,7 @@ export function Selection({
       <select
         {...reste}
         className={cx(
-          "w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:border-marque",
+          "w-full rounded-xl border bg-transparent px-3 py-2.5 text-sm outline-none transition-colors focus:border-marque focus:ring-2 focus:ring-marque/15",
           erreurs?.length
             ? "border-red-400"
             : "border-ardoise-200 dark:border-ardoise-700",
@@ -391,22 +391,29 @@ export function Onglets<T extends string>({
   onChange: (cle: T) => void;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap gap-1 border-b border-ardoise-200 dark:border-ardoise-700">
+    <div className="mb-4 flex w-fit flex-wrap gap-1 rounded-full bg-ardoise-100 p-1 dark:bg-ardoise-800">
       {onglets.map((onglet) => (
         <button
           key={onglet.cle}
           type="button"
           onClick={() => onChange(onglet.cle)}
           className={cx(
-            "-mb-px border-b-2 px-4 py-2 text-sm transition",
+            "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition",
             actif === onglet.cle
-              ? "border-marque font-medium"
-              : "border-transparent text-ardoise-500 hover:text-ardoise-700 dark:hover:text-ardoise-100",
+              ? "bg-marque text-white shadow-sm"
+              : "text-ardoise-500 hover:text-ardoise-700 dark:hover:text-ardoise-100",
           )}
         >
           {onglet.libelle}
           {onglet.compteur ? (
-            <span className="ml-2 rounded-full bg-ardoise-100 px-1.5 py-0.5 text-xs dark:bg-ardoise-700">
+            <span
+              className={cx(
+                "rounded-full px-1.5 py-0.5 text-xs",
+                actif === onglet.cle
+                  ? "bg-white/20"
+                  : "bg-ardoise-200 dark:bg-ardoise-700",
+              )}
+            >
               {onglet.compteur}
             </span>
           ) : null}

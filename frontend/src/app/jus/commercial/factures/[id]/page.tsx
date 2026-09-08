@@ -15,8 +15,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/jus/composants/ui/button";
-import { Card } from "@/jus/composants/ui/card";
+import { Button } from "@/ui/button";
+import { Card } from "@/ui/card";
 import { PageHeader } from "@/jus/composants/app/page-header";
 import { FormSheet } from "@/jus/composants/app/form-sheet";
 import { StatusBadge, type Tone } from "@/jus/composants/app/status-badge";

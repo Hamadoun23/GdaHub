@@ -9,20 +9,20 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@/jus/composants/ui/sheet";
-import { Button } from "@/jus/composants/ui/button";
-import { Input } from "@/jus/composants/ui/input";
-import { Label } from "@/jus/composants/ui/label";
-import { Textarea } from "@/jus/composants/ui/textarea";
-import { Checkbox } from "@/jus/composants/ui/checkbox";
+} from "@/ui/sheet";
+import { Button } from "@/ui/button";
+import { Input } from "@/ui/input";
+import { Label } from "@/ui/label";
+import { Textarea } from "@/ui/textarea";
+import { Checkbox } from "@/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/jus/composants/ui/select";
-import { cn } from "@/jus/lib/utils";
+} from "@/ui/select";
+import { cn } from "@/lib/cn";
 import type { Field } from "@/jus/lib/types";
 import type { FormOptions } from "@/jus/lib/api";
 

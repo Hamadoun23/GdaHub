@@ -6,7 +6,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/jus/composants/ui/select";
+} from "@/ui/select";
 
 export type OptionSimple = { value: string; label: string };
 

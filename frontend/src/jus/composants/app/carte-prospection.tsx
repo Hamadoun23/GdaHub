@@ -11,7 +11,7 @@ import {
   lienItineraire,
   metaStatut,
 } from "@/jus/lib/prospection";
-import { cn } from "@/jus/lib/utils";
+import { cn } from "@/lib/cn";
 
 type Props = {
   points: PointVente[];

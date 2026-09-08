@@ -15,8 +15,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/jus/composants/ui/card";
-import { Badge } from "@/jus/composants/ui/badge";
+} from "@/ui/card";
+import { Badge } from "@/ui/badge";
 import { fetchList, fetchSummary } from "@/jus/lib/api";
 import { xof, num } from "@/jus/lib/format";
 import { ventes as ventesRes, factures as facturesRes } from "@/jus/lib/data/commercial";

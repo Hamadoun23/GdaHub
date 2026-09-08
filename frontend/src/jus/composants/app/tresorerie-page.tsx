@@ -11,8 +11,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Input } from "@/jus/composants/ui/input";
-import { Card } from "@/jus/composants/ui/card";
+import { Input } from "@/ui/input";
+import { Card } from "@/ui/card";
 import {
   Table,
   TableBody,
@@ -20,13 +20,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/jus/composants/ui/table";
+} from "@/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/jus/composants/ui/dropdown-menu";
+} from "@/ui/dropdown-menu";
 import { PageHeader } from "@/jus/composants/app/page-header";
 import { FormSheet } from "@/jus/composants/app/form-sheet";
 import { StatusBadge, type Tone } from "@/jus/composants/app/status-badge";

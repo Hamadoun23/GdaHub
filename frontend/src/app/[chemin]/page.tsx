@@ -95,7 +95,7 @@ function Contenu() {
       <div className="flex items-baseline gap-3">
         <span
           className="h-2 w-2 rounded-full"
-          style={{ backgroundColor: application.couleur || "#0f766e" }}
+          style={{ backgroundColor: application.couleur || "var(--color-marque)" }}
         />
         <h1 className="text-xl font-semibold tracking-tight">{application.nom}</h1>
       </div>

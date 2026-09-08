@@ -33,3 +33,8 @@ out/
 .DS_Store
 .idea/
 .vscode/
+
+# Gabarits ThemeForest payes (uifolio, mivon, Agntix...) : licence commerciale
+# a usage unique, pas le droit de les redistribuer — et deux des .zip
+# depassent de toute facon la limite de 100 Mo par fichier de GitHub.
+templates/

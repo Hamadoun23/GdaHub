@@ -136,10 +136,13 @@ export function CircuitValidation({ etapes }: { etapes: EtapeValidation[] }) {
  * machine lancee.
  *
  * ``ressource`` est le prefixe REST du document, par exemple
- * ``/finance/requisitions``.
+ * ``/demandes-absence`` ou ``/depenses`` — sans le segment de domaine
+ * (``/rh``, ``/finance``) : c'est ``racine`` qui le porte, pour que
+ * l'appel parte vers le bon prefixe cote passerelle.
  */
 export function ActionsCirculation({
   ressource,
+  racine = "rh",
   document,
   estDemandeur,
   peutDecider,
@@ -147,6 +150,7 @@ export function ActionsCirculation({
   onChangement,
 }: {
   ressource: string;
+  racine?: "rh" | "finance";
   document: DocumentCirculant;
   estDemandeur: boolean;
   peutDecider: boolean;
@@ -165,6 +169,7 @@ export function ActionsCirculation({
       appelApi(`${ressource}/${document.id}/${chemin}/`, {
         methode: "POST",
         corps: corps ?? {},
+        racine,
       }),
     );
     if (succes) {
@@ -176,7 +181,7 @@ export function ActionsCirculation({
 
   const supprimer = async () => {
     const succes = await action.executer(() =>
-      appelApi(`${ressource}/${document.id}/`, { methode: "DELETE" }),
+      appelApi(`${ressource}/${document.id}/`, { methode: "DELETE", racine }),
     );
     if (succes) {
       setModale(null);

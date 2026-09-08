@@ -13,9 +13,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/jus/composants/ui/button";
-import { Input } from "@/jus/composants/ui/input";
-import { Card } from "@/jus/composants/ui/card";
+import { Button } from "@/ui/button";
+import { Input } from "@/ui/input";
+import { Card } from "@/ui/card";
 import {
   Table,
   TableBody,
@@ -23,16 +23,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/jus/composants/ui/table";
+} from "@/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/jus/composants/ui/dropdown-menu";
+} from "@/ui/dropdown-menu";
 import { PageHeader } from "@/jus/composants/app/page-header";
 import { FormSheet } from "@/jus/composants/app/form-sheet";
-import { cn } from "@/jus/lib/utils";
+import { cn } from "@/lib/cn";
 import {
   ApiError,
   createItem,
@@ -354,14 +354,14 @@ export function CrudPage<T extends Row>({
                               href={resource.rowHref(row)}
                               className="flex items-center gap-2.5 hover:underline"
                             >
-                              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                              <span className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                 <Icon className="size-4" />
                               </span>
                               {c.cell(row)}
                             </Link>
                           ) : (
                             <div className="flex items-center gap-2.5">
-                              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                              <span className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                                 <Icon className="size-4" />
                               </span>
                               {c.cell(row)}

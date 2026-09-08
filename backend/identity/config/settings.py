@@ -58,6 +58,7 @@ CSRF_TRUSTED_ORIGINS = _liste(  # noqa: F405
     "http://localhost:8080,http://127.0.0.1:8080,http://localhost:8101",
 )
 
+MEDIA_URL = os.environ.get("MEDIA_URL", "media/hub/")
 MEDIA_ROOT = BASE_DIR / "media"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 

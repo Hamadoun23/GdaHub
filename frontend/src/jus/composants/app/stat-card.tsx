@@ -6,8 +6,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/jus/composants/ui/card";
-import { cn } from "@/jus/lib/utils";
+} from "@/ui/card";
+import { cn } from "@/lib/cn";
 
 export type Stat = {
   label: string;
@@ -39,7 +39,7 @@ export function StatCard({ stat }: { stat: Stat }) {
         {stat.delta && (
           <span
             className={cn(
-              "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 font-medium",
+              "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-medium",
               positive
                 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                 : "bg-red-500/15 text-red-600 dark:text-red-400"

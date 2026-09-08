@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { Icone } from "@/rh/composants/icones";
 import { ActionsCirculation, BadgeStatut, CircuitValidation } from "@/rh/composants/metier";
 import {
   Alerte,
@@ -33,6 +34,7 @@ interface Dossier {
   cle: string;
   id: number;
   ressource: string;
+  racine: "rh" | "finance";
   type: "Conge" | "Retard" | "Demande";
   numero: string;
   demandeur: number;
@@ -79,7 +81,8 @@ function depuisAbsence(absence: DemandeAbsence, aMoi: boolean): Dossier {
   return {
     cle: `absence-${absence.id}`,
     id: absence.id,
-    ressource: "/rh/demandes-absence",
+    ressource: "/demandes-absence",
+    racine: "rh",
     type: retard ? "Retard" : "Conge",
     numero: absence.numero,
     demandeur: absence.demandeur,
@@ -109,7 +112,8 @@ function depuisDemande(demande: Depense, aMoi: boolean): Dossier {
   return {
     cle: `demande-${demande.id}`,
     id: demande.id,
-    ressource: "/finance/depenses",
+    ressource: "/depenses",
+    racine: "finance",
     type: "Demande",
     numero: demande.numero,
     demandeur: demande.demandeur,
@@ -145,12 +149,12 @@ export default function PageValidations() {
   const [selection, setSelection] = useState<Dossier | null>(null);
   const [departement, setDepartement] = useState("tous");
 
-  const aValiderAbsences = useListe<DemandeAbsence>("/rh/demandes-absence/a-valider/");
-  const aValiderDemandes = useListe<Depense>("/finance/depenses/a-valider/");
-  const toutesAbsences = useListe<DemandeAbsence>(
-    "/rh/demandes-absence/?statut=EN_VALIDATION",
-  );
-  const toutesDemandes = useListe<Depense>("/finance/depenses/?statut=EN_VALIDATION");
+  const aValiderAbsences = useListe<DemandeAbsence>("/demandes-absence/a-valider/");
+  const aValiderDemandes = useListe<Depense>("/depenses/a-valider/", { racine: "finance" });
+  const toutesAbsences = useListe<DemandeAbsence>("/demandes-absence/?statut=EN_VALIDATION");
+  const toutesDemandes = useListe<Depense>("/depenses/?statut=EN_VALIDATION", {
+    racine: "finance",
+  });
 
   const requetes = [aValiderAbsences, aValiderDemandes, toutesAbsences, toutesDemandes];
   const chargement = requetes.some((requete) => requete.chargement);
@@ -215,15 +219,18 @@ export default function PageValidations() {
           valeur={aTraiter.length}
           detail="Dossiers attendant votre decision"
           ton={aTraiter.length ? "alerte" : "succes"}
+          icone={<Icone nom="alerte" />}
         />
         <TuileStat
           libelle="En circulation"
           valeur={enCirculation.length}
           detail="Soumis, pas encore tranches"
           ton="marque"
+          icone={<Icone nom="indicateur" />}
         />
         <TuileStat
           libelle="Plus ancien dossier"
+          icone={<Icone nom="presence" />}
           valeur={
             enCirculation.length
               ? date(enCirculation[0].soumisLe ?? enCirculation[0].creeLe)
@@ -412,6 +419,7 @@ export default function PageValidations() {
               {selection.aMoi ? (
                 <ActionsCirculation
                   ressource={selection.ressource}
+                  racine={selection.racine}
                   document={selection.document}
                   estDemandeur={selection.demandeur === utilisateur?.id}
                   peutDecider

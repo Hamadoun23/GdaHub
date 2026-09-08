@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import {
   useEffect,
   useId,
@@ -33,15 +34,15 @@ export function Carte({
   sansPadding?: boolean;
 }) {
   return (
-    <section className={cx("carte apparition", className)}>
+    <section className={cx("apparition rounded-2xl border border-border bg-card shadow-sm", className)}>
       {(titre || actions) && (
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
           <div>
             {titre && (
-              <h2 className="text-sm font-semibold text-slate-800">{titre}</h2>
+              <h2 className="text-sm font-semibold text-foreground">{titre}</h2>
             )}
             {sousTitre && (
-              <p className="mt-0.5 text-xs text-slate-500">{sousTitre}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{sousTitre}</p>
             )}
           </div>
           {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -64,11 +65,11 @@ export function EnTetePage({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+        <h1 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
           {titre}
         </h1>
         {description && (
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">{description}</p>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
         )}
       </div>
       {/* Sur telephone, une action isolee occupe toute la largeur : elle se
@@ -94,12 +95,21 @@ type VarianteBouton = "principal" | "secondaire" | "discret" | "danger" | "succe
  */
 const STYLES_BOUTON: Record<VarianteBouton, string> = {
   principal:
-    "bg-marque-700 text-white shadow-sm hover:bg-marque-800 active:bg-marque-900",
+    "bg-gradient-to-b from-marque-600 to-marque-700 text-white shadow-[0_1px_0_0_rgb(255_255_255/0.16)_inset,0_10px_20px_-8px_rgb(208_62_13/0.55)] hover:to-marque-800 hover:shadow-[0_1px_0_0_rgb(255_255_255/0.16)_inset,0_14px_26px_-8px_rgb(208_62_13/0.65)] active:from-marque-800 active:to-marque-900",
   secondaire:
-    "bg-white text-slate-700 border border-slate-300 hover:border-slate-400 hover:bg-slate-50",
-  discret: "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+    "bg-card text-foreground border border-border shadow-sm hover:border-input hover:bg-secondary",
+  discret: "bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
   danger: "bg-rose-600 text-white shadow-sm hover:bg-rose-700",
   succes: "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700",
+};
+
+type PropsBouton = Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart" | "onAnimationEnd" | "onAnimationIteration"
+> & {
+  variante?: VarianteBouton;
+  taille?: "normale" | "petite";
+  chargement?: boolean;
 };
 
 export function Bouton({
@@ -109,15 +119,14 @@ export function Bouton({
   children,
   className,
   ...reste
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variante?: VarianteBouton;
-  taille?: "normale" | "petite";
-  chargement?: boolean;
-}) {
+}: PropsBouton) {
+  const desactive = reste.disabled || chargement;
   return (
-    <button
+    <motion.button
       {...reste}
-      disabled={reste.disabled || chargement}
+      disabled={desactive}
+      whileTap={desactive ? undefined : { scale: 0.97 }}
+      transition={{ duration: 0.12 }}
       className={cx(
         "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition",
         "disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none",
@@ -134,7 +143,7 @@ export function Bouton({
         <span className="size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
       )}
       {children}
-    </button>
+    </motion.button>
   );
 }
 
@@ -149,12 +158,12 @@ export type TonBadge =
   | "marque";
 
 const STYLES_BADGE: Record<TonBadge, string> = {
-  neutre: "bg-slate-100 text-slate-700 ring-slate-200",
-  info: "bg-sky-50 text-sky-700 ring-sky-200",
-  succes: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  alerte: "bg-amber-50 text-amber-700 ring-amber-200",
-  danger: "bg-rose-50 text-rose-700 ring-rose-200",
-  marque: "bg-marque-50 text-marque-700 ring-marque-200",
+  neutre: "bg-muted text-muted-foreground ring-border",
+  info: "bg-sky-500/10 text-sky-600 ring-sky-500/20",
+  succes: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20",
+  alerte: "bg-amber-500/10 text-amber-600 ring-amber-500/20",
+  danger: "bg-rose-500/10 text-rose-600 ring-rose-500/20",
+  marque: "bg-marque-500/10 text-marque-700 ring-marque-500/20",
 };
 
 export function Badge({
@@ -179,6 +188,16 @@ export function Badge({
   );
 }
 
+/** Degrade et ombre teintee de l'icone, par ton — meme famille de couleur que le badge. */
+const ACCENT_ICONE: Record<TonBadge, string> = {
+  neutre: "bg-gradient-to-br from-slate-400 to-slate-600 shadow-[0_8px_18px_-6px_rgb(111_112_113/0.45)]",
+  info: "bg-gradient-to-br from-sky-400 to-sky-600 shadow-[0_8px_18px_-6px_rgb(14_165_233/0.5)]",
+  succes: "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_8px_18px_-6px_rgb(16_185_129/0.5)]",
+  alerte: "bg-gradient-to-br from-amber-400 to-amber-600 shadow-[0_8px_18px_-6px_rgb(245_158_11/0.5)]",
+  danger: "bg-gradient-to-br from-rose-400 to-rose-600 shadow-[0_8px_18px_-6px_rgb(244_63_94/0.5)]",
+  marque: "bg-gradient-to-br from-marque-400 to-marque-600 shadow-[0_8px_18px_-6px_rgb(255_106_58/0.55)]",
+};
+
 export function TuileStat({
   libelle,
   valeur,
@@ -193,7 +212,7 @@ export function TuileStat({
   icone?: ReactNode;
 }) {
   const accents: Record<TonBadge, string> = {
-    neutre: "text-slate-900",
+    neutre: "text-foreground",
     info: "text-sky-700",
     succes: "text-emerald-700",
     alerte: "text-amber-700",
@@ -201,17 +220,26 @@ export function TuileStat({
     marque: "text-marque-700",
   };
   return (
-    <div className="carte apparition p-4">
+    <div className="apparition rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {libelle}
         </p>
-        {icone && <span className="text-slate-300">{icone}</span>}
+        {icone && (
+          <span
+            className={cx(
+              "flex size-8 shrink-0 items-center justify-center rounded-lg text-white",
+              ACCENT_ICONE[ton],
+            )}
+          >
+            {icone}
+          </span>
+        )}
       </div>
       <p className={cx("mt-2 text-2xl font-semibold tabular-nums", accents[ton])}>
         {valeur}
       </p>
-      {detail && <p className="mt-1 text-xs text-slate-500">{detail}</p>}
+      {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
     </div>
   );
 }
@@ -226,17 +254,17 @@ export function BarreProgression({
   ton?: TonBadge;
 }) {
   const couleurs: Record<TonBadge, string> = {
-    neutre: "bg-slate-400",
+    neutre: "bg-muted-foreground",
     info: "bg-sky-500",
     succes: "bg-emerald-500",
     alerte: "bg-amber-500",
     danger: "bg-rose-500",
-    marque: "bg-marque-500",
+    marque: "bg-gradient-to-r from-marque-400 to-marque-600",
   };
   const ratio = max > 0 ? Math.min(Math.max((valeur / max) * 100, 0), 100) : 0;
   return (
     <div
-      className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100"
+      className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
       role="progressbar"
       aria-valuenow={Math.round(ratio)}
       aria-valuemin={0}
@@ -254,8 +282,8 @@ export function BarreProgression({
 
 export function Chargement({ libelle = "Chargement..." }: { libelle?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
-      <span className="size-4 animate-spin rounded-full border-2 border-slate-300 border-t-marque-600" />
+    <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+      <span className="size-4 animate-spin rounded-full border-2 border-border border-t-marque-600" />
       {libelle}
     </div>
   );
@@ -271,7 +299,7 @@ export function Alerte({
   children: ReactNode;
 }) {
   const styles: Record<TonBadge, string> = {
-    neutre: "bg-slate-50 text-slate-700 border-slate-200",
+    neutre: "bg-muted text-foreground border-border",
     info: "bg-sky-50 text-sky-800 border-sky-200",
     succes: "bg-emerald-50 text-emerald-800 border-emerald-200",
     alerte: "bg-amber-50 text-amber-800 border-amber-200",
@@ -297,14 +325,14 @@ export function EtatVide({
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-      <div className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+      <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="size-5" stroke="currentColor" strokeWidth="1.8">
           <path d="M4 7h16M4 12h16M4 17h10" strokeLinecap="round" />
         </svg>
       </div>
-      <p className="text-sm font-medium text-slate-700">{titre}</p>
+      <p className="text-sm font-medium text-foreground">{titre}</p>
       {description && (
-        <p className="max-w-sm text-xs text-slate-500">{description}</p>
+        <p className="max-w-sm text-xs text-muted-foreground">{description}</p>
       )}
       {action && <div className="mt-2">{action}</div>}
     </div>
@@ -428,11 +456,11 @@ export function Tableau({
     <div className="tableau-reactif overflow-x-auto" style={intitules}>
       <table className="w-full border-collapse text-sm md:min-w-160">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50/70">
+          <tr className="border-b border-border bg-muted/50">
             {entetes.map((entete, rang) => (
               <th
                 key={`${entete}-${rang}`}
-                className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground"
               >
                 {entete}
               </th>
@@ -458,7 +486,7 @@ export function Cellule({
   colSpan?: number;
 }) {
   return (
-    <td colSpan={colSpan} className={cx("px-4 py-3 text-slate-700", className)}>
+    <td colSpan={colSpan} className={cx("px-4 py-3 text-foreground", className)}>
       {children}
     </td>
   );
@@ -494,49 +522,61 @@ export function Modale({
     };
   }, [ouverte, onFermer]);
 
-  if (!ouverte) return null;
-
   return (
-    // Sur telephone, la modale monte du bas et colle au bord : le pouce
-    // atteint ses boutons, et la fermeture reste a portee.
-    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-900/40 backdrop-blur-[1px] sm:items-start sm:p-8">
-      <div
-        className="absolute inset-0"
-        onClick={onFermer}
-        aria-hidden="true"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={titre}
-        className={cx(
-          "carte apparition relative z-10 w-full max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0",
-          large ? "max-w-3xl" : "max-w-lg",
-        )}
-      >
-        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-4 py-4 sm:px-5">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">{titre}</h2>
-            {description && (
-              <p className="mt-0.5 text-xs text-slate-500">{description}</p>
-            )}
-          </div>
-          <button
-            type="button"
+    <AnimatePresence>
+      {ouverte && (
+        // Sur telephone, la modale monte du bas et colle au bord : le pouce
+        // atteint ses boutons, et la fermeture reste a portee.
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-900/40 backdrop-blur-[1px] sm:items-start sm:p-8"
+        >
+          <div
+            className="absolute inset-0"
             onClick={onFermer}
-            aria-label="Fermer"
-            className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            aria-hidden="true"
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={titre}
+            className={cx(
+              "relative z-10 w-full rounded-2xl border border-border bg-card shadow-sm max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0",
+              large ? "max-w-3xl" : "max-w-lg",
+            )}
           >
-            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-            </svg>
-          </button>
-        </header>
-        <div className="max-h-[70dvh] overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:max-h-[75vh] sm:p-5 sm:pb-5">
-          {children}
-        </div>
-      </div>
-    </div>
+            <header className="flex items-start justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">{titre}</h2>
+                {description && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={onFermer}
+                aria-label="Fermer"
+                className="rounded-md p-1 text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+              >
+                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </header>
+            <div className="max-h-[70dvh] overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:max-h-[75vh] sm:p-5 sm:pb-5">
+              {children}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -553,6 +593,7 @@ export function StatPrincipale({
   detail,
   progression,
   ton = "marque",
+  icone,
 }: {
   libelle: string;
   valeur: ReactNode;
@@ -560,9 +601,10 @@ export function StatPrincipale({
   detail?: ReactNode;
   progression?: { valeur: number; max: number };
   ton?: TonBadge;
+  icone?: ReactNode;
 }) {
   const couleurs: Record<TonBadge, string> = {
-    neutre: "text-slate-900",
+    neutre: "text-foreground",
     info: "text-sky-700",
     succes: "text-emerald-700",
     alerte: "text-amber-700",
@@ -570,15 +612,27 @@ export function StatPrincipale({
     marque: "text-marque-700",
   };
   return (
-    <div className="carte apparition p-4 sm:p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        {libelle}
-      </p>
+    <div className="apparition rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {libelle}
+        </p>
+        {icone && (
+          <span
+            className={cx(
+              "flex size-8 shrink-0 items-center justify-center rounded-lg text-white",
+              ACCENT_ICONE[ton],
+            )}
+          >
+            {icone}
+          </span>
+        )}
+      </div>
       <p className="mt-1.5 flex items-baseline gap-1.5">
         <span className={cx("text-4xl font-semibold tabular-nums", couleurs[ton])}>
           {valeur}
         </span>
-        {unite && <span className="text-sm text-slate-500">{unite}</span>}
+        {unite && <span className="text-sm text-muted-foreground">{unite}</span>}
       </p>
       {progression && (
         <div className="mt-3">
@@ -589,7 +643,7 @@ export function StatPrincipale({
           />
         </div>
       )}
-      {detail && <p className="mt-2 text-xs text-slate-500">{detail}</p>}
+      {detail && <p className="mt-2 text-xs text-muted-foreground">{detail}</p>}
     </div>
   );
 }
@@ -614,9 +668,9 @@ export function ActionRapide({
         {icone}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium text-slate-800">{titre}</span>
+        <span className="block text-sm font-medium text-foreground">{titre}</span>
         {description && (
-          <span className="block truncate text-xs text-slate-500">{description}</span>
+          <span className="block truncate text-xs text-muted-foreground">{description}</span>
         )}
       </span>
       <svg
@@ -625,7 +679,7 @@ export function ActionRapide({
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
-        className="size-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-marque-500"
+        className="size-4 shrink-0 text-muted-foreground/60 transition group-hover:translate-x-0.5 group-hover:text-marque-500"
         aria-hidden="true"
       >
         <path d="m9 6 6 6-6 6" />
@@ -633,7 +687,7 @@ export function ActionRapide({
     </>
   );
   const classes =
-    "carte group flex w-full items-center gap-3 p-3.5 text-left transition hover:border-marque-200 hover:shadow-sm";
+    "group flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left shadow-sm transition hover:border-marque-200 hover:shadow-sm";
 
   return href ? (
     <a href={href} className={classes}>
@@ -651,7 +705,7 @@ export function ActionRapide({
  * personnelles : un titre, une precision, une valeur, un statut.
  */
 export function ListeLignes({ children }: { children: ReactNode }) {
-  return <ul className="divide-y divide-slate-100">{children}</ul>;
+  return <ul className="divide-y divide-border">{children}</ul>;
 }
 
 export function LigneListe({
@@ -670,11 +724,11 @@ export function LigneListe({
   const contenu = (
     <>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-800">{titre}</p>
-        {detail && <p className="mt-0.5 truncate text-xs text-slate-500">{detail}</p>}
+        <p className="truncate text-sm font-medium text-foreground">{titre}</p>
+        {detail && <p className="mt-0.5 truncate text-xs text-muted-foreground">{detail}</p>}
       </div>
       {valeur && (
-        <span className="shrink-0 text-sm tabular-nums text-slate-700">{valeur}</span>
+        <span className="shrink-0 text-sm tabular-nums text-foreground">{valeur}</span>
       )}
       {statut && <span className="shrink-0">{statut}</span>}
     </>
@@ -686,7 +740,7 @@ export function LigneListe({
         <button
           type="button"
           onClick={onClick}
-          className="flex w-full items-center gap-3 px-1 py-3 text-left transition hover:bg-slate-50/80"
+          className="flex w-full items-center gap-3 px-1 py-3 text-left transition hover:bg-secondary/60"
         >
           {contenu}
         </button>
@@ -711,27 +765,27 @@ export function Onglets<T extends string>({
   return (
     // Replies sur deux ou trois lignes, les onglets mangent l'ecran ;
     // une bande qui defile horizontalement garde la page lisible.
-    <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="mb-4 flex w-fit gap-1 overflow-x-auto rounded-full bg-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {onglets.map((onglet) => (
         <button
           key={onglet.cle}
           type="button"
           onClick={() => onChange(onglet.cle)}
           className={cx(
-            "-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition sm:py-2",
+            "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition",
             actif === onglet.cle
-              ? "border-marque-600 text-marque-700"
-              : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700",
+              ? "bg-marque-700 text-white shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           {onglet.libelle}
           {onglet.compteur !== undefined && (
             <span
               className={cx(
-                "ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums",
+                "rounded-full px-1.5 py-0.5 text-xs tabular-nums",
                 actif === onglet.cle
-                  ? "bg-marque-50 text-marque-700"
-                  : "bg-slate-100 text-slate-500",
+                  ? "bg-white/20"
+                  : "bg-secondary text-muted-foreground",
               )}
             >
               {onglet.compteur}

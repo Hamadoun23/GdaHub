@@ -102,6 +102,7 @@ export type Utilisateur = {
   email: string;
   fonction: string;
   est_superadmin: boolean;
+  photo: string | null;
 };
 
 export type Profil = {

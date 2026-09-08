@@ -10,6 +10,13 @@ import { num, pct } from "@/jus/lib/format";
 import { useRapports, valeur, liste } from "@/jus/lib/use-rapports";
 import { repartitionEnDonut } from "@/jus/lib/data/donut";
 
+import { AFaire } from "@/composants/dashboard-hub/a-faire";
+import { Total } from "@/composants/dashboard-hub/total";
+import { Urgent } from "@/composants/dashboard-hub/urgent";
+import type { ElementAFaire } from "@/composants/dashboard-hub/utiliser-a-faire";
+
+const COULEUR_PAR_CODE = { stock: "#eb6834" };
+
 /**
  * Agrège les rapports Récolte, Appro, Fabrication, Emballage et Entrepôt sur
  * l'année civile. Les cinq appels partent en parallèle ; un rapport refusé
@@ -47,70 +54,99 @@ export default function ProductionDashboard() {
     "bouteilles_par_statut"
   );
 
+  // Articles sous leur seuil d'alerte -> ElementAFaire, pour reutiliser
+  // Total/Urgent/AFaire plutot qu'une liste bespoke.
+  const alertesStock = stock.filter((a) => a.seuil > 0 && a.stock < a.seuil);
+  const elements: ElementAFaire[] | null = loading
+    ? null
+    : alertesStock.map((a) => ({
+        cle: `stock-${a.article}`,
+        code: "stock",
+        app: "Stock",
+        href: "/jus/production/inventaires",
+        titre: a.article,
+        sousTitre: `${num(a.stock)} en stock · seuil ${num(a.seuil)}`,
+        personne: a.article,
+        etat: "retard",
+        urgent: true,
+      }));
+
   const periode = data.recolte?.periode as
     | { date_debut: string; date_fin: string }
     | undefined;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Tableau de bord — Production"
-        description={
-          periode
-            ? `Récolte, fabrication et stocks · année ${annee}`
-            : "Récolte, fabrication et stocks"
-        }
-      />
+    <div className="dark relative -m-4 min-h-[calc(100svh-4rem)] bg-background text-foreground md:-m-6">
+      <div className="space-y-6 p-4 md:p-8">
+        <PageHeader
+          title="Tableau de bord — Production"
+          description={
+            periode
+              ? `Récolte, fabrication et stocks · année ${annee}`
+              : "Récolte, fabrication et stocks"
+          }
+        />
 
-      <StatGrid
-        stats={[
-          {
-            label: "Récolte",
-            value: loading ? "…" : `${num(recolteKg)} kg`,
-            hint: `${valeur(data, "recolte", "nb_cueillettes")} cueillette(s)`,
-            icon: Sprout,
-          },
-          {
-            label: "Jus produit",
-            value: loading ? "…" : `${num(volumeL)} L`,
-            hint: `${valeur(data, "fabrication", "nb_terminees")} production(s) terminée(s)`,
-            icon: Droplets,
-          },
-          {
-            label: "Rendement",
-            value: loading ? "…" : orangesRecues > 0 ? pct(rendement) : "—",
-            hint: "litres par kg d'orange reçue",
-            icon: Gauge,
-          },
-          {
-            label: "Alertes stock",
-            value: loading ? "…" : String(valeur(data, "appro", "nb_articles_alerte")),
-            hint: "articles sous le seuil",
-            icon: Boxes,
-          },
-        ]}
-      />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5 lg:items-stretch">
+          <div className="flex flex-col gap-4 lg:col-span-2">
+            <Total elements={elements} />
+            <Urgent elements={elements} />
+          </div>
+          <div className="lg:col-span-3">
+            <AFaire elements={elements} couleurParCode={COULEUR_PAR_CODE} />
+          </div>
+        </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          {stock.length > 0 && (
-            <StockBarChart
-              data={stock}
-              title="Niveaux de stock vs seuils d'alerte"
-              description="Tous les articles suivis"
+        <StatGrid
+          stats={[
+            {
+              label: "Récolte",
+              value: loading ? "…" : `${num(recolteKg)} kg`,
+              hint: `${valeur(data, "recolte", "nb_cueillettes")} cueillette(s)`,
+              icon: Sprout,
+            },
+            {
+              label: "Jus produit",
+              value: loading ? "…" : `${num(volumeL)} L`,
+              hint: `${valeur(data, "fabrication", "nb_terminees")} production(s) terminée(s)`,
+              icon: Droplets,
+            },
+            {
+              label: "Rendement",
+              value: loading ? "…" : orangesRecues > 0 ? pct(rendement) : "—",
+              hint: "litres par kg d'orange reçue",
+              icon: Gauge,
+            },
+            {
+              label: "Alertes stock",
+              value: loading ? "…" : String(valeur(data, "appro", "nb_articles_alerte")),
+              hint: "articles sous le seuil",
+              icon: Boxes,
+            },
+          ]}
+        />
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            {stock.length > 0 && (
+              <StockBarChart
+                data={stock}
+                title="Niveaux de stock vs seuils d'alerte"
+                description="Tous les articles suivis"
+              />
+            )}
+          </div>
+          {bouteilles.length > 0 && (
+            <DonutChartCard
+              title="Parc de bouteilles"
+              description="Répartition par statut"
+              data={repartitionEnDonut(bouteilles)}
             />
           )}
         </div>
-        {bouteilles.length > 0 && (
-          <DonutChartCard
-            title="Parc de bouteilles"
-            description="Répartition par statut"
-            data={repartitionEnDonut(bouteilles)}
-          />
-        )}
-      </div>
 
-      <MiniTable resource={productions} href="/jus/production/productions" />
+        <MiniTable resource={productions} href="/jus/production/productions" />
+      </div>
     </div>
   );
 }

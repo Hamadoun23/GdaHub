@@ -45,6 +45,12 @@ class HabilitationSerializer(serializers.ModelSerializer):
             "application_code",
             "application_nom",
             "roles",
+            # Sans lui, le compte unique ne fonctionne que pour les personnes
+            # dont l'application connait deja l'adresse professionnelle. Les
+            # autres — celles reprises depuis Laravel, celles qui n'ont pas
+            # d'adresse du tout — ne sont rattachables que par ce champ, et il
+            # n'etait joignable que par l'administration Django.
+            "identifiant_local",
             "active",
             "accordee_le",
         ]

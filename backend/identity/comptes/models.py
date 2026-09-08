@@ -58,6 +58,9 @@ class Utilisateur(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField("Adresse e-mail", blank=True)
     telephone = models.CharField("Telephone", max_length=30, blank=True)
     fonction = models.CharField("Fonction", max_length=150, blank=True)
+    photo = models.ImageField(
+        "Photo de profil", upload_to="photos", null=True, blank=True
+    )
 
     est_actif = models.BooleanField(
         "Compte actif",

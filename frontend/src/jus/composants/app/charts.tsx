@@ -18,7 +18,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/jus/composants/ui/card";
+} from "@/ui/card";
 import {
   ChartConfig,
   ChartContainer,
@@ -26,7 +26,7 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/jus/composants/ui/chart";
+} from "@/ui/chart";
 
 function ChartCard({
   title,

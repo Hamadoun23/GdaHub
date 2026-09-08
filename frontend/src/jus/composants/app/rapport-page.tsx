@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/jus/composants/ui/button";
-import { Card } from "@/jus/composants/ui/card";
+import { Button } from "@/ui/button";
+import { Card } from "@/ui/card";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/jus/composants/ui/table";
+} from "@/ui/table";
 import { PageHeader } from "@/jus/composants/app/page-header";
 import {
   FaitsMarquants,
@@ -22,7 +22,7 @@ import {
   Variation,
   type Analyse,
 } from "@/jus/composants/app/analytique";
-import { cn } from "@/jus/lib/utils";
+import { cn } from "@/lib/cn";
 import {
   ApiError,
   fetchRapport,

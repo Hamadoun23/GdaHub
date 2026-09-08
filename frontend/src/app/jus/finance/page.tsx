@@ -13,7 +13,7 @@ import {
 import { PageHeader } from "@/jus/composants/app/page-header";
 import { StatGrid } from "@/jus/composants/app/stat-card";
 import { DonutChartCard } from "@/jus/composants/app/charts";
-import { Card } from "@/jus/composants/ui/card";
+import { Card } from "@/ui/card";
 import { xof } from "@/jus/lib/format";
 import {
   fetchRapprochementTresorerie,
@@ -21,6 +21,13 @@ import {
 } from "@/jus/lib/api";
 import { useRapports, liste, valeur } from "@/jus/lib/use-rapports";
 import { modesEnDonut } from "@/jus/lib/data/donut";
+
+import { AFaire } from "@/composants/dashboard-hub/a-faire";
+import { Total } from "@/composants/dashboard-hub/total";
+import { Urgent } from "@/composants/dashboard-hub/urgent";
+import type { ElementAFaire } from "@/composants/dashboard-hub/utiliser-a-faire";
+
+const COULEUR_PAR_CODE = { ecart: "#eb6834" };
 
 /**
  * Les indicateurs viennent du rapprochement de trésorerie (paiements déclarés
@@ -74,7 +81,7 @@ export default function FinanceDashboard() {
     {
       label: "Chiffre d'affaires facturé",
       montant: caFacture,
-      couleur: "bg-primary",
+      couleur: "bg-gradient-to-r from-primary to-[color-mix(in_oklch,var(--primary),black_15%)]",
       detail: "Total des ventes enregistrées sur la période.",
     },
     {
@@ -103,12 +110,39 @@ export default function FinanceDashboard() {
     (l) => l.reception_id !== null && !l.ecart_traite && (l.ecart ?? 0) !== 0
   );
 
+  // Ecarts non traites -> ElementAFaire, pour reutiliser Total/Urgent/AFaire
+  // plutot qu'une liste bespoke.
+  const elements: ElementAFaire[] | null = totaux === null
+    ? null
+    : ecartsAJustifier.map((l) => ({
+        cle: `ecart-${l.paiement_id}`,
+        code: "ecart",
+        app: "Écart",
+        href: "/jus/finance/tresorerie",
+        titre: l.num_fact ?? `Paiement #${l.paiement_id}`,
+        sousTitre: xof(l.ecart ?? 0),
+        personne: l.num_fact ?? `Paiement #${l.paiement_id}`,
+        etat: "a_valider",
+        urgent: (l.ecart ?? 0) < 0,
+      }));
+
   return (
-    <div className="space-y-6">
+    <div className="dark relative -m-4 min-h-[calc(100svh-4rem)] bg-background text-foreground md:-m-6">
+      <div className="space-y-6 p-4 md:p-8">
       <PageHeader
         title="Tableau de bord — Finance"
         description={`Chiffre d'affaires, encaissements et écarts · année ${annee}`}
       />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5 lg:items-stretch">
+        <div className="flex flex-col gap-4 lg:col-span-2">
+          <Total elements={elements} />
+          <Urgent elements={elements} />
+        </div>
+        <div className="lg:col-span-3">
+          <AFaire elements={elements} couleurParCode={COULEUR_PAR_CODE} />
+        </div>
+      </div>
 
       <StatGrid
         stats={[
@@ -220,7 +254,7 @@ export default function FinanceDashboard() {
                   return (
                     <li
                       key={l.paiement_id}
-                      className={`flex items-center justify-between rounded-lg px-3 py-2 ${
+                      className={`flex items-center justify-between rounded-xl px-3 py-2 ${
                         negatif ? "bg-red-500/10" : "bg-blue-500/10"
                       }`}
                     >
@@ -250,6 +284,7 @@ export default function FinanceDashboard() {
             Ouvrir la trésorerie →
           </Link>
         </Card>
+      </div>
       </div>
     </div>
   );

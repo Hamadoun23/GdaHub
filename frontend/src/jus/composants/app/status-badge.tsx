@@ -1,5 +1,5 @@
-import { Badge } from "@/jus/composants/ui/badge";
-import { cn } from "@/jus/lib/utils";
+import { Badge } from "@/ui/badge";
+import { cn } from "@/lib/cn";
 
 export type Tone =
   | "green"

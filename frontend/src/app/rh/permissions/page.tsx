@@ -51,7 +51,7 @@ export default function PagePermissions() {
     permission?: DemandeAbsence;
   } | null>(null);
   const [selection, setSelection] = useState<DemandeAbsence | null>(null);
-  const demandes = useListe<DemandeAbsence>("/rh/demandes-absence/mes-demandes/");
+  const demandes = useListe<DemandeAbsence>("/demandes-absence/mes-demandes/");
 
   const permissions = (demandes.donnees ?? []).filter(
     (demande) => demande.categorie === "PERMISSION",
@@ -169,7 +169,7 @@ export default function PagePermissions() {
 
             <div className="border-t border-slate-100 pt-4">
               <ActionsCirculation
-                ressource="/rh/demandes-absence"
+                ressource="/demandes-absence"
                 document={selection}
                 estDemandeur={selection.demandeur === utilisateur?.id}
                 peutDecider={false}
@@ -263,18 +263,18 @@ function FormulairePermission({
         : { corps };
 
       if (permission) {
-        await appelApi(`/rh/demandes-absence/${permission.id}/`, {
+        await appelApi(`/demandes-absence/${permission.id}/`, {
           methode: "PATCH",
           ...charge,
         });
         return;
       }
 
-      const creee = await appelApi<DemandeAbsence>("/rh/demandes-absence/", {
+      const creee = await appelApi<DemandeAbsence>("/demandes-absence/", {
         methode: "POST",
         ...charge,
       });
-      await appelApi(`/rh/demandes-absence/${creee.id}/soumettre/`, {
+      await appelApi(`/demandes-absence/${creee.id}/soumettre/`, {
         methode: "POST",
         corps: {},
       });

@@ -1,4 +1,4 @@
-import { cn } from "@/jus/lib/utils";
+import { cn } from "@/lib/cn";
 
 export type Activity = {
   id: string | number;

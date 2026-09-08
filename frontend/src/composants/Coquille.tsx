@@ -4,18 +4,54 @@
  * L'ossature commune a toutes les pages authentifiees.
  *
  * Elle porte deux responsabilites : rediriger vers la connexion quand la
- * session est absente, et afficher la barre de navigation. Le menu est
- * construit a partir des applications renvoyees par identity, jamais d'une
- * liste ecrite en dur : ajouter une application au groupe ne doit rien
- * demander au front.
+ * session est absente, et afficher la navigation. Le menu est construit a
+ * partir des applications renvoyees par identity, jamais d'une liste ecrite
+ * en dur : ajouter une application au groupe ne doit rien demander au front.
+ *
+ * Le hub compose la meme coquille partagee (`composants/coquille-app`) que
+ * Jus d'orange, RH, Chantiers et Planning — une sidebar, pas le bandeau
+ * horizontal d'avant. Le "retour au hub" de l'entete est masque ici : on y
+ * est deja.
+ *
+ * Identite sombre : reservee a la seule barre laterale (`coquille-app/
+ * barre-laterale.tsx`), comme la maquette de reference "Virtus" — sidebar
+ * sombre unie, entete et canevas clairs. Le hub ne porte donc plus aucun
+ * habillage sombre a ce niveau, y compris pour l'ecran de chargement.
  */
 
-import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { Home } from "lucide-react";
 
+import { EspaceApplication } from "@/composants/coquille-app/espace-application";
+import { initialesDepuis } from "@/composants/coquille-app/initiales";
+import type { GroupeNav } from "@/composants/coquille-app/types";
 import { grouper } from "@/lib/groupes";
+import { iconePourApplication } from "@/lib/icones-applications";
 import { useSession } from "@/lib/session";
+
+const PALETTE_GROUPE = ["bg-primary", "bg-blue-500", "bg-emerald-500", "bg-violet-500", "bg-amber-500"];
+
+// `IconeComposant` accepte n'importe quel composant qui prend une `className`
+// — une icone lucide ou, ici, le logo GDA. C'est ce badge en haut de la
+// barre laterale (les « 4 carres ») que l'utilisateur a demande de
+// remplacer par le vrai logo plutot qu'une icone generique.
+function LogoGDA({ className }: { className?: string }) {
+  // Le badge parent (`size-9`, 36px) ne laisse a l'icone que `size-5` (20px) :
+  // trop petit pour que le trait fin du logo (aile + texte script) reste
+  // lisible — a cette taille il devenait un pate uniforme. `-inset-2`
+  // agrandit le badge blanc jusqu'aux 36px du parent (20 + 8 de chaque cote),
+  // sans toucher au composant partage : seul ce badge-ci, pas les icones des
+  // autres applications.
+  return (
+    <span className={`relative block ${className || ""}`}>
+      <span className="absolute -inset-2 overflow-hidden rounded-lg bg-white">
+        <Image src="/img/logo-gda-carre.png" alt="GDA" fill className="object-contain p-1" />
+      </span>
+    </span>
+  );
+}
 
 export function Coquille({ children }: { children: React.ReactNode }) {
   const { profil, chargement, deconnecter } = useSession();
@@ -26,9 +62,38 @@ export function Coquille({ children }: { children: React.ReactNode }) {
     if (!chargement && !profil) routeur.replace("/connexion");
   }, [chargement, profil, routeur]);
 
+  const groupes: GroupeNav[] = useMemo(() => {
+    if (!profil) return [];
+    const dynamiques = grouper(profil.applications).map((section, rang) => ({
+      cle: section.titre || `section-${rang}`,
+      label: section.titre || "Applications",
+      couleur: PALETTE_GROUPE[rang % PALETTE_GROUPE.length],
+      items: section.applications.map((application) => ({
+        label: application.nom,
+        href: application.chemin || "/tableau-de-bord",
+        icon: iconePourApplication(application.code),
+        externe: (application.chemin || "").startsWith("/campagnes"),
+      })),
+    }));
+    // Toujours en tete, avant les applications elles-memes : le seul moyen de
+    // revenir au tableau de bord une fois parti dessus vers une application.
+    const accueil: GroupeNav = {
+      cle: "accueil",
+      label: "Accueil",
+      couleur: "bg-ardoise-400",
+      items: [{ label: "Accueil", href: "/tableau-de-bord", icon: Home }],
+    };
+    return [accueil, ...dynamiques];
+  }, [profil]);
+
+  const badgeLabel = useMemo(() => {
+    if (!profil) return undefined;
+    return profil.applications.find((application) => application.chemin === chemin)?.nom;
+  }, [profil, chemin]);
+
   if (chargement) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-ardoise-500">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-muted-foreground">
         Chargement de votre espace...
       </div>
     );
@@ -36,88 +101,26 @@ export function Coquille({ children }: { children: React.ReactNode }) {
 
   if (!profil) return null;
 
+  const { utilisateur } = profil;
+
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-ardoise-200 bg-white/80 backdrop-blur dark:border-ardoise-700 dark:bg-ardoise-900/80">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
-          <Link href="/tableau-de-bord" className="font-semibold tracking-tight">
-            GDA <span className="text-marque">Hub</span>
-          </Link>
-
-          {/* Les sections sont separees par un filet plutot que par un titre :
-              une barre horizontale n'a pas la place d'afficher « Board » et
-              « Applications metier », mais la coupure suffit a faire lire les
-              deux blocs comme distincts. */}
-          <nav className="flex flex-1 flex-wrap items-center gap-1 text-sm">
-            {grouper(profil.applications).map((section, rang) => (
-              <div key={section.titre} className="flex flex-wrap items-center gap-1">
-                {rang > 0 ? (
-                  <span
-                    aria-hidden
-                    className="mx-2 h-4 w-px bg-ardoise-200 dark:bg-ardoise-700"
-                  />
-                ) : null}
-                {section.applications.map((application) => {
-                  const cible = application.chemin || "/tableau-de-bord";
-                  const actif = chemin === cible;
-                  const classe = `rounded-md px-3 py-1.5 transition ${
-                    actif
-                      ? "bg-ardoise-100 font-medium dark:bg-ardoise-700"
-                      : "text-ardoise-500 hover:bg-ardoise-100 dark:hover:bg-ardoise-700"
-                  }`;
-
-                  // Campagnes sert encore ses propres pages, hors du routeur
-                  // de Next : elle seule demande une navigation complete.
-                  // Les autres applications vivent dans cette interface.
-                  return cible.startsWith("/campagnes") ? (
-                    <a
-                      key={application.code}
-                      href={cible}
-                      title={section.titre || undefined}
-                      className={classe}
-                    >
-                      {application.nom}
-                    </a>
-                  ) : (
-                    <Link
-                      key={application.code}
-                      href={cible}
-                      title={section.titre || undefined}
-                      className={classe}
-                    >
-                      {application.nom}
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-3 text-sm">
-            {/* Le nom mene au compte : c'est la ou l'on va pour changer son
-                mot de passe, et c'est le premier endroit ou l'on clique. */}
-            <Link
-              href="/mon-compte"
-              className={`rounded-md px-3 py-1.5 transition ${
-                chemin === "/mon-compte"
-                  ? "bg-ardoise-100 font-medium dark:bg-ardoise-700"
-                  : "text-ardoise-500 hover:bg-ardoise-100 dark:hover:bg-ardoise-700"
-              }`}
-            >
-              {profil.utilisateur.nom_complet}
-            </Link>
-            <button
-              type="button"
-              onClick={() => deconnecter().then(() => routeur.replace("/connexion"))}
-              className="rounded-md border border-ardoise-200 px-3 py-1.5 transition hover:bg-ardoise-100 dark:border-ardoise-700 dark:hover:bg-ardoise-700"
-            >
-              Se deconnecter
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
-    </div>
+    <EspaceApplication
+      nomApp="GDA Hub"
+      sousTitre="Espace connecte"
+      icone={LogoGDA}
+      groupes={groupes}
+      badgeLabel={badgeLabel}
+      retourHubVisible={false}
+      utilisateur={{
+        nomAffiche: utilisateur.nom_complet || utilisateur.identifiant,
+        sousLabel: utilisateur.fonction,
+        initiales: initialesDepuis(utilisateur.nom_complet || utilisateur.identifiant),
+        estAdmin: utilisateur.est_superadmin,
+        photoUrl: utilisateur.photo,
+      }}
+      onDeconnexion={() => deconnecter().then(() => routeur.replace("/connexion"))}
+    >
+      {children}
+    </EspaceApplication>
   );
 }

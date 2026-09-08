@@ -101,10 +101,10 @@ const ANNUAIRE: EntreeNav = {
 };
 
 const MON_PROFIL: EntreeNav = {
-  libelle: "Mon profil",
+  libelle: "Mon espace",
   href: "/rh/mon-espace",
   icone: "profil",
-  aide: "Coordonnees et mot de passe",
+  aide: "Solde de conges, anciennete, contrat",
 };
 
 /**

@@ -1,5 +1,9 @@
 // Client HTTP pour l'API REST Django (JusOrange).
 
+// Le prefixe du service est DEJA dans cette base : les chemins passes a
+// `request()` partent donc de la racine de l'API Django, sans « /jus ». L'y
+// remettre donnait « /api/jus/jus/reporting/... », que la passerelle
+// transmettait tel quel — et tous les rapports repondaient 404.
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_JUS ?? "/api/jus";
 
@@ -375,7 +379,7 @@ function queryRapport(params: ParamsRapport): string {
  */
 export async function fetchRapport(module: string, params: ParamsRapport = {}) {
   return request<Record<string, unknown>>(
-    `/jus/reporting/${module}/${queryRapport(params)}`
+    `/reporting/${module}/${queryRapport(params)}`
   );
 }
 
@@ -449,5 +453,5 @@ export async function fetchSummary() {
     recolte_zone: { zone: string; tonnage: number }[];
     stock_articles: { article: string; stock: number; seuil: number }[];
     paiements_mode: { mode_paie: string; total: number }[];
-  }>("/jus/reporting/summary/");
+  }>("/reporting/summary/");
 }

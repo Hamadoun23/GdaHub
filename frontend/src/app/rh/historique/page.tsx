@@ -65,8 +65,8 @@ export default function PageHistorique() {
   const [filtre, setFiltre] = useState<Categorie | "tout">("tout");
   const [departement, setDepartement] = useState("tous");
 
-  const absences = useListe<DemandeAbsence>("/rh/demandes-absence/");
-  const demandes = useListe<Depense>("/finance/depenses/");
+  const absences = useListe<DemandeAbsence>("/demandes-absence/");
+  const demandes = useListe<Depense>("/depenses/", { racine: "finance" });
 
   const chargement = absences.chargement || demandes.chargement;
   const erreur = absences.erreur ?? demandes.erreur;

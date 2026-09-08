@@ -25,6 +25,39 @@ import { ErreurApi, appeler, identity, type Profil } from "@/lib/api";
 
 const CLE_RAFRAICHISSEMENT = "gdahub.rafraichissement";
 
+/**
+ * TEMPORAIRE — le service identity n'est pas joignable en local pendant la
+ * refonte visuelle en cours (backend hors service), donc aucune session
+ * reelle ne peut s'etablir. Le temps de revoir l'habillage sur les vraies
+ * pages, on simule un profil de demonstration a la place d'une session
+ * absente. Ne s'active jamais en production (`NODE_ENV`) — a retirer (ce
+ * bloc + son unique usage plus bas) des que l'authentification reelle
+ * redevient disponible. Couvre le hub, Chantiers et Planning, qui lisent
+ * tous `useSession()` directement ; RH et Jus d'orange ont chacun leur
+ * propre session (voir `rh/lib/auth.tsx`, `jus/lib/auth.tsx`).
+ */
+const APERCU_SANS_AUTH = process.env.NODE_ENV !== "production";
+
+const PROFIL_APERCU: Profil = {
+  utilisateur: {
+    id: 0,
+    identifiant: "apercu",
+    nom_complet: "Apercu design",
+    email: "apercu@gda.local",
+    fonction: "Revue de la refonte visuelle",
+    est_superadmin: true,
+    photo: null,
+  },
+  habilitations: {},
+  applications: [
+    { id: 1, code: "organisation", nom: "Administration", description: "", groupe: "Board", chemin: "/administration", prefixe_api: "", couleur: "", ordre: 0, roles: [] },
+    { id: 2, code: "rh", nom: "RH", description: "", groupe: "Applications metier", chemin: "/rh/tableau-de-bord", prefixe_api: "", couleur: "", ordre: 1, roles: [] },
+    { id: 3, code: "orange", nom: "Jus d'orange", description: "", groupe: "Applications metier", chemin: "/jus/commercial", prefixe_api: "", couleur: "", ordre: 2, roles: [] },
+    { id: 4, code: "daily", nom: "Chantiers", description: "", groupe: "Applications metier", chemin: "/chantiers", prefixe_api: "", couleur: "", ordre: 3, roles: [] },
+    { id: 5, code: "planning", nom: "Planning", description: "", groupe: "Applications metier", chemin: "/planning", prefixe_api: "", couleur: "", ordre: 4, roles: [] },
+  ],
+};
+
 type ValeurSession = {
   profil: Profil | null;
   chargement: boolean;
@@ -32,6 +65,10 @@ type ValeurSession = {
   deconnecter: () => Promise<void>;
   /** Appel authentifie vers n'importe quel service, jeton renouvele si besoin. */
   requete: <T>(chemin: string, options?: { methode?: string; corps?: unknown }) => Promise<T>;
+  /** Remplace le profil en memoire par une version plus recente — par exemple
+   * apres le depot d'une photo, dont la reponse renvoie deja le profil a
+   * jour : inutile de le redemander separement. */
+  actualiserProfil: (profil: Profil) => void;
 };
 
 const Contexte = createContext<ValeurSession | null>(null);
@@ -141,7 +178,14 @@ export function FournisseurSession({ children }: { children: React.ReactNode }) 
   );
 
   const valeur = useMemo(
-    () => ({ profil, chargement, connecter, deconnecter, requete }),
+    () => ({
+      profil: profil ?? (APERCU_SANS_AUTH ? PROFIL_APERCU : null),
+      chargement,
+      connecter,
+      deconnecter,
+      requete,
+      actualiserProfil: setProfil,
+    }),
     [profil, chargement, connecter, deconnecter, requete],
   );
 

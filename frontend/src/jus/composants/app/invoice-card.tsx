@@ -1,6 +1,6 @@
 import { Citrus } from "lucide-react";
 import { StatusBadge, type Tone } from "@/jus/composants/app/status-badge";
-import { cn } from "@/jus/lib/utils";
+import { cn } from "@/lib/cn";
 
 // Carte facture stylisée (style Tailark) : en-tête dégradé + détail + statut.
 export function InvoiceCard({

@@ -19,7 +19,7 @@ import {
   Sparkles,
   TriangleAlert,
 } from "lucide-react";
-import { Card } from "@/jus/composants/ui/card";
+import { Card } from "@/ui/card";
 import {
   ChartConfig,
   ChartContainer,
@@ -27,8 +27,8 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/jus/composants/ui/chart";
-import { cn } from "@/jus/lib/utils";
+} from "@/ui/chart";
+import { cn } from "@/lib/cn";
 
 /**
  * Briques analytiques des rapports.

@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dist-ssr/
+
+# local env files
+.env*.local
+
+# editor
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# logs
+logs
+*.log
+npm-debug.log*
+
+# macOS
+.DS_Store
+*.pem
+
+# typescript
+*.tsbuildinfo

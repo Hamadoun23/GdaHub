@@ -26,13 +26,14 @@ interface EtatRessource<T> {
  */
 export function useRessource<T>(
   chemin: string | null,
-  options: { liste?: boolean } = {},
+  options: { liste?: boolean; racine?: "rh" | "finance" } = {},
 ): EtatRessource<T> {
   const [donnees, setDonnees] = useState<T | null>(null);
   const [chargement, setChargement] = useState(Boolean(chemin));
   const [erreur, setErreur] = useState<string | null>(null);
   // Evite d'appliquer la reponse d'une requete annulee par une plus recente.
   const requeteCourante = useRef(0);
+  const racine = options.racine;
 
   const charger = useCallback(async () => {
     if (!chemin) {
@@ -45,8 +46,8 @@ export function useRessource<T>(
     setErreur(null);
     try {
       const resultat = options.liste
-        ? ((await listerTout(chemin)) as T)
-        : await appelApi<T>(chemin);
+        ? ((await listerTout(chemin, { racine })) as T)
+        : await appelApi<T>(chemin, { racine });
       if (identifiant === requeteCourante.current) setDonnees(resultat);
     } catch (exception) {
       if (identifiant !== requeteCourante.current) return;
@@ -58,7 +59,7 @@ export function useRessource<T>(
     } finally {
       if (identifiant === requeteCourante.current) setChargement(false);
     }
-  }, [chemin, options.liste]);
+  }, [chemin, options.liste, racine]);
 
   useEffect(() => {
     // Le chargement est declenche hors du corps de l'effet : les mises a jour
@@ -70,8 +71,8 @@ export function useRessource<T>(
 }
 
 /** Raccourci pour les endpoints de liste pagines. */
-export function useListe<T>(chemin: string | null) {
-  return useRessource<T[]>(chemin, { liste: true });
+export function useListe<T>(chemin: string | null, options: { racine?: "rh" | "finance" } = {}) {
+  return useRessource<T[]>(chemin, { liste: true, racine: options.racine });
 }
 
 interface EtatAction {

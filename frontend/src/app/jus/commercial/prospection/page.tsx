@@ -13,9 +13,9 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button, buttonVariants } from "@/jus/composants/ui/button";
-import { Input } from "@/jus/composants/ui/input";
-import { Card } from "@/jus/composants/ui/card";
+import { Button, buttonVariants } from "@/ui/button";
+import { Input } from "@/ui/input";
+import { Card } from "@/ui/card";
 import { PageHeader } from "@/jus/composants/app/page-header";
 import { StatusBadge } from "@/jus/composants/app/status-badge";
 import { CarteProspection } from "@/jus/composants/app/carte-prospection";
@@ -39,7 +39,7 @@ import {
 import { FRAICHEUR_OPTIONS_MS, invaliderPrefixe, useDonnees } from "@/jus/lib/cache";
 import { frDate, xof } from "@/jus/lib/format";
 import { STATUTS, metaStatut } from "@/jus/lib/prospection";
-import { cn } from "@/jus/lib/utils";
+import { cn } from "@/lib/cn";
 
 const CLE_POINTS = "liste:points-vente";
 

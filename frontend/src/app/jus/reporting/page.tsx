@@ -13,7 +13,7 @@ import {
 import { PageHeader } from "@/jus/composants/app/page-header";
 import { StatGrid } from "@/jus/composants/app/stat-card";
 import { BarChartCard, ProductionAreaChart } from "@/jus/composants/app/charts";
-import { Card, CardContent } from "@/jus/composants/ui/card";
+import { Card, CardContent } from "@/ui/card";
 import { num, xof } from "@/jus/lib/format";
 import { useRapports, valeur, liste } from "@/jus/lib/use-rapports";
 import { serieRecolteProduction } from "@/jus/lib/data/series";
@@ -51,76 +51,78 @@ export default function ReportingOverview() {
   );
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Reporting — Vue d'ensemble"
-        description={`Indicateurs consolidés de toute la chaîne de valeur · année ${annee}`}
-      />
-
-      <StatGrid
-        stats={[
-          {
-            label: "Récolte cumulée",
-            value: loading ? "…" : `${num(valeur(data, "recolte", "qte_total_kg"))} kg`,
-            hint: `${valeur(data, "recolte", "nb_cueillettes")} cueillette(s)`,
-          },
-          {
-            label: "Jus produit",
-            value: loading ? "…" : `${num(valeur(data, "fabrication", "volume_total_l"))} L`,
-            hint: `${valeur(data, "fabrication", "nb_productions")} production(s)`,
-          },
-          {
-            label: "Bouteilles disponibles",
-            value: loading ? "…" : num(bouteillesDispo),
-            hint: "33cl + 1L en stock",
-          },
-          {
-            label: "Chiffre d'affaires",
-            value: loading ? "…" : xof(valeur(data, "distribution", "ca_total")),
-            hint: `${valeur(data, "distribution", "nb_ventes")} vente(s)`,
-          },
-        ]}
-      />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ProductionAreaChart
-          title="Production & récolte"
-          description={`Par date · année ${annee}`}
-          data={serie}
+    <div className="dark relative -m-4 min-h-[calc(100svh-4rem)] bg-background text-foreground md:-m-6">
+      <div className="space-y-6 p-4 md:p-8">
+        <PageHeader
+          title="Reporting — Vue d'ensemble"
+          description={`Indicateurs consolidés de toute la chaîne de valeur · année ${annee}`}
         />
-        {recolteParZone.length > 0 && (
-          <BarChartCard
-            title="Récolte par zone"
-            description="Tonnage cumulé sur l'année (kg)"
-            data={recolteParZone}
-            xKey="zone"
-            barKey="tonnage"
-            label="Récolte (kg)"
-            unit="kg"
-          />
-        )}
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {rapports.map((r) => {
-          const Icon = r.icon;
-          return (
-            <Link key={r.href} href={r.href}>
-              <Card className="group h-full transition-colors hover:border-primary/50">
-                <CardContent className="flex items-center gap-4">
-                  <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="size-5" />
-                  </span>
-                  <div className="flex-1">
-                    <p className="font-semibold">{r.label}</p>
-                    <p className="text-sm text-muted-foreground">{r.desc}</p>
-                  </div>
-                  <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
+        <StatGrid
+          stats={[
+            {
+              label: "Récolte cumulée",
+              value: loading ? "…" : `${num(valeur(data, "recolte", "qte_total_kg"))} kg`,
+              hint: `${valeur(data, "recolte", "nb_cueillettes")} cueillette(s)`,
+            },
+            {
+              label: "Jus produit",
+              value: loading ? "…" : `${num(valeur(data, "fabrication", "volume_total_l"))} L`,
+              hint: `${valeur(data, "fabrication", "nb_productions")} production(s)`,
+            },
+            {
+              label: "Bouteilles disponibles",
+              value: loading ? "…" : num(bouteillesDispo),
+              hint: "33cl + 1L en stock",
+            },
+            {
+              label: "Chiffre d'affaires",
+              value: loading ? "…" : xof(valeur(data, "distribution", "ca_total")),
+              hint: `${valeur(data, "distribution", "nb_ventes")} vente(s)`,
+            },
+          ]}
+        />
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ProductionAreaChart
+            title="Production & récolte"
+            description={`Par date · année ${annee}`}
+            data={serie}
+          />
+          {recolteParZone.length > 0 && (
+            <BarChartCard
+              title="Récolte par zone"
+              description="Tonnage cumulé sur l'année (kg)"
+              data={recolteParZone}
+              xKey="zone"
+              barKey="tonnage"
+              label="Récolte (kg)"
+              unit="kg"
+            />
+          )}
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {rapports.map((r) => {
+            const Icon = r.icon;
+            return (
+              <Link key={r.href} href={r.href}>
+                <Card className="group h-full transition-colors hover:border-primary/50">
+                  <CardContent className="flex items-center gap-4">
+                    <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Icon className="size-5" />
+                    </span>
+                    <div className="flex-1">
+                      <p className="font-semibold">{r.label}</p>
+                      <p className="text-sm text-muted-foreground">{r.desc}</p>
+                    </div>
+                    <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

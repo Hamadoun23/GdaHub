@@ -39,7 +39,7 @@ export default function PageMesDemandes() {
   // `demande` : correction de celle-ci.
   const [formulaire, setFormulaire] = useState<{ demande?: Depense } | null>(null);
   const [selection, setSelection] = useState<Depense | null>(null);
-  const demandes = useListe<Depense>("/finance/depenses/mes-demandes/");
+  const demandes = useListe<Depense>("/depenses/mes-demandes/", { racine: "finance" });
 
   const rafraichir = () => {
     void demandes.recharger();
@@ -158,7 +158,8 @@ export default function PageMesDemandes() {
 
             <div className="border-t border-slate-100 pt-4">
               <ActionsCirculation
-                ressource="/finance/depenses"
+                ressource="/depenses"
+                racine="finance"
                 document={selection}
                 estDemandeur={selection.demandeur === utilisateur?.id}
                 peutDecider={false}
@@ -215,22 +216,25 @@ function FormulaireDemande({
       if (piece) donnees.append("piece_justificative", piece);
 
       if (demande) {
-        await appelApi(`/finance/depenses/${demande.id}/`, {
+        await appelApi(`/depenses/${demande.id}/`, {
           methode: "PATCH",
           fichiers: donnees,
+          racine: "finance",
         });
         return;
       }
 
       // La categorie comptable n'est pas demandee : le serveur applique la
       // categorie par defaut, que la Finance reclassera si besoin.
-      const creee = await appelApi<Depense>("/finance/depenses/", {
+      const creee = await appelApi<Depense>("/depenses/", {
         methode: "POST",
         fichiers: donnees,
+        racine: "finance",
       });
-      await appelApi(`/finance/depenses/${creee.id}/soumettre/`, {
+      await appelApi(`/depenses/${creee.id}/soumettre/`, {
         methode: "POST",
         corps: {},
+        racine: "finance",
       });
     });
     if (succes) onEnregistre();

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2, ShieldAlert } from "lucide-react";
-import { Button } from "@/jus/composants/ui/button";
+import { Button } from "@/ui/button";
 import { useAuth } from "@/jus/lib/auth";
 import { canAccess, roleHome } from "@/jus/lib/access";
 

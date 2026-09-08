@@ -127,6 +127,12 @@ def emettre_acces(utilisateur: Utilisateur) -> str:
             "identifiant": utilisateur.identifiant,
             "nom_complet": utilisateur.nom_complet,
             "email": utilisateur.email,
+            # Le profil (nom, photo) est desormais gere une seule fois, par le
+            # hub : porter la photo dans le jeton permet aux applications
+            # rassemblees (Campagnes...) de l'afficher sans appel reseau
+            # supplementaire — la meme logique que `nom_complet`/`email`
+            # ci-dessus, deja transportes ainsi.
+            "photo": utilisateur.photo.url if utilisateur.photo else None,
             "est_superadmin": utilisateur.is_superuser,
             "habilitations": utilisateur.habilitations_actives(),
             # Sous quel nom chaque application connait cette personne, quand
