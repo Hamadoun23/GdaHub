@@ -51,7 +51,7 @@ export default function ReportingOverview() {
   );
 
   return (
-    <div className="dark relative -m-4 min-h-[calc(100svh-4rem)] bg-background text-foreground md:-m-6">
+    <div className="">
       <div className="space-y-6 p-4 md:p-8">
         <PageHeader
           title="Reporting — Vue d'ensemble"

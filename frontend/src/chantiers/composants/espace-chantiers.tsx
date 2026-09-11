@@ -1,14 +1,12 @@
 "use client";
 
 /**
- * L'espace Chantiers, compose sur la coquille d'application partagee.
- *
- * Remplace l'ancienne entete sombre + banniere de chantier (navigation.tsx) :
- * Chantiers adopte desormais le meme habillage que les autres applications
- * du hub — uniformiser, c'est renoncer a sa propre identite visuelle au
- * profit d'un seul systeme, partage par tous.
+ * L'espace Chantiers : identite visuelle propre (entete sombre + banniere,
+ * barre laterale claire avec commutateur de projet), reprise de
+ * daily.gdamali.net — voir navigation.tsx pour le detail de la palette.
  */
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Camera,
@@ -16,7 +14,6 @@ import {
   Cloud,
   Compass,
   FileText,
-  HardHat,
   History,
   LayoutDashboard,
   ListTree,
@@ -24,9 +21,7 @@ import {
 } from "lucide-react";
 
 import { useSession } from "@/lib/session";
-import { EspaceApplication } from "@/composants/coquille-app/espace-application";
-import { initialesDepuis } from "@/composants/coquille-app/initiales";
-import type { GroupeNav } from "@/composants/coquille-app/types";
+import { EnteteChantiers, BarreLateraleChantiers, type GroupeNavChantier } from "./navigation";
 import type { Projet } from "../lib/types";
 
 /** Roles qui valent equipe interne — cf. hub.UtilisateurHub.ROLES_INTERNES cote Django. */
@@ -38,6 +33,16 @@ export function useEstPartenaire() {
   if (profil.utilisateur.est_superadmin) return false;
   const roles = profil.applications.find((a) => a.code === "daily")?.roles ?? [];
   return roles.includes("partenaire") && !roles.some((r) => ROLES_INTERNES.has(r));
+}
+
+function initialesDepuis(nom: string) {
+  return nom
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((mot) => mot[0])
+    .join("")
+    .toUpperCase();
 }
 
 export function EspaceChantiers({
@@ -52,6 +57,7 @@ export function EspaceChantiers({
   const { profil, deconnecter } = useSession();
   const routeur = useRouter();
   const estPartenaire = useEstPartenaire();
+  const [menuOuvert, setMenuOuvert] = useState(false);
 
   const racine = projet ? `/chantiers/${projet.id}` : undefined;
 
@@ -79,15 +85,14 @@ export function EspaceChantiers({
       ]
     : [];
 
-  const groupes: GroupeNav[] = [
-    { cle: "navigation", label: estPartenaire ? "Espace partenaire" : "Navigation", couleur: "bg-primary", items },
-    { cle: "previsions", label: "Previsions", couleur: "bg-blue-500", items: previsions },
+  const groupes: GroupeNavChantier[] = [
+    { cle: "navigation", label: estPartenaire ? "Espace partenaire" : "Navigation", items },
+    { cle: "previsions", label: "Previsions", items: previsions },
     ...(!estPartenaire
       ? [
           {
             cle: "autre",
             label: "Autre",
-            couleur: "bg-muted-foreground",
             items: [{ label: "Tous les chantiers", href: "/chantiers", icon: Compass }],
           },
         ]
@@ -96,45 +101,50 @@ export function EspaceChantiers({
 
   const nomAffiche = profil?.utilisateur.nom_complet || profil?.utilisateur.identifiant || "—";
 
+  const commutateurProjet =
+    projet && projets && !estPartenaire ? (
+      <div className="border-b px-4 pb-3.5 pt-4" style={{ borderColor: "#d5cfc2" }}>
+        <label
+          htmlFor="commutateur-projet"
+          className="mb-1.5 block text-[10px] font-bold uppercase tracking-[2px]"
+          style={{ color: "#8a8070" }}
+        >
+          Projet actif
+        </label>
+        <select
+          id="commutateur-projet"
+          value={projet.id}
+          onChange={(e) => routeur.push(`/chantiers/${e.target.value}`)}
+          className="w-full rounded-[10px] border px-3 py-2.5 text-sm font-semibold outline-none"
+          style={{ borderColor: "#d5cfc2", background: "#ffffff", color: "#1a1814" }}
+        >
+          {projets.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    ) : undefined;
+
   return (
-    <EspaceApplication
-      nomApp="Chantiers"
-      sousTitre="Gestion des chantiers"
-      icone={HardHat}
-      groupes={groupes}
-      pied={projet ? `${projet.name} · ${projet.tasks_count} tache${projet.tasks_count > 1 ? "s" : ""}` : undefined}
-      badgeLabel={projet?.name}
-      utilisateur={{
-        nomAffiche,
-        initiales: initialesDepuis(nomAffiche),
-        estAdmin: profil?.utilisateur.est_superadmin,
-        photoUrl: profil?.utilisateur.photo,
-      }}
-      onDeconnexion={() => deconnecter().then(() => routeur.replace("/connexion"))}
-      rechercheVisible={false}
-      avantGroupes={
-        projet && projets && !estPartenaire ? (
-          <div className="border-b border-sidebar-border px-4 py-3">
-            <label htmlFor="commutateur-projet" className="mb-1 block text-[10px] uppercase tracking-widest text-muted-foreground">
-              Projet actif
-            </label>
-            <select
-              id="commutateur-projet"
-              value={projet.id}
-              onChange={(e) => routeur.push(`/chantiers/${e.target.value}`)}
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm font-medium outline-none focus:border-primary"
-            >
-              {projets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : undefined
-      }
-    >
-      {children}
-    </EspaceApplication>
+    <div className="min-h-screen" style={{ background: "#f4f1eb" }}>
+      <EnteteChantiers
+        projetLabel={projet?.name}
+        nomAffiche={nomAffiche}
+        initiales={initialesDepuis(nomAffiche)}
+        onOuvrirMenu={() => setMenuOuvert(true)}
+        onDeconnexion={() => deconnecter().then(() => routeur.replace("/connexion"))}
+      />
+      <BarreLateraleChantiers
+        groupes={groupes}
+        ouverte={menuOuvert}
+        onFermer={() => setMenuOuvert(false)}
+        commutateurProjet={commutateurProjet}
+      />
+      <main className="pt-20 md:pt-24 lg:pl-64">
+        <div className="px-4 py-6 md:px-8">{children}</div>
+      </main>
+    </div>
   );
 }

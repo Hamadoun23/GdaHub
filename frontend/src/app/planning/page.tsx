@@ -78,7 +78,7 @@ export default function PagePlanningAccueil() {
   ];
 
   return (
-    <div className="dark relative -m-4 min-h-[calc(100svh-4rem)] bg-background p-4 text-foreground md:-m-6 md:p-8">
+    <div>
       <h1 className="mb-1 text-2xl font-bold text-foreground">Tableau de bord</h1>
       <p className="mb-6 text-sm text-muted-foreground">Gérez vos plannings et générez des rapports en un clic.</p>
 

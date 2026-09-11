@@ -36,7 +36,6 @@ export default function PageChantiers() {
 
   return (
     <EspaceChantiers>
-      <div className="dark relative -m-4 min-h-[calc(100svh-4rem)] bg-background p-4 text-foreground md:-m-6 md:p-8">
       <div className="mx-auto max-w-5xl">
       <EnTetePageChantier
         titre="Chantiers"
@@ -99,7 +98,6 @@ export default function PageChantiers() {
           }}
         />
       ) : null}
-      </div>
       </div>
     </EspaceChantiers>
   );

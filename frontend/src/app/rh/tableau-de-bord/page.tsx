@@ -253,7 +253,7 @@ function AccueilValideur() {
   const erreurRegistre = toutesAbsences.erreur ?? toutesDemandes.erreur;
 
   return (
-    <div className="dark relative -m-4 min-h-[calc(100svh-4rem)] rounded-3xl bg-background p-4 text-foreground md:-m-6 md:p-8">
+    <div className="space-y-5">
       <EnTetePage
         titre="Vue d'ensemble"
         description="Les conges, retards et demandes du personnel, et les dossiers qui attendent votre decision."
@@ -451,7 +451,7 @@ function AccueilSalarie() {
     Number(solde.donnees?.jours_acquis ?? 0) + Number(solde.donnees?.jours_reportes ?? 0);
 
   return (
-    <div className="dark relative -m-4 min-h-[calc(100svh-4rem)] rounded-3xl bg-background p-4 text-foreground md:-m-6 md:p-8">
+    <div className="space-y-5">
       <EnTetePage
         titre={`Bonjour ${utilisateur?.nom_complet ?? ""}`.trim()}
         description="Vos demarches et le suivi de vos demandes."

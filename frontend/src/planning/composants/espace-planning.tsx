@@ -1,20 +1,15 @@
 "use client";
 
 /**
- * L'espace Planning, compose sur la coquille d'application partagee.
- *
- * Remplace l'ancien degrade orange + onglets horizontaux (navigation.tsx) :
- * Planning adopte desormais le meme habillage que les autres applications
- * du hub.
+ * L'espace Planning : degrade orange en entete + barre horizontale a
+ * onglets, identite propre reprise de DocsERP/Planning-main.
  */
 
 import { useRouter } from "next/navigation";
-import { Clapperboard, LayoutDashboard, Lightbulb, Megaphone, Users, Video } from "lucide-react";
+import { LayoutDashboard, Lightbulb, Megaphone, Users, Video } from "lucide-react";
 
 import { useSession } from "@/lib/session";
-import { EspaceApplication } from "@/composants/coquille-app/espace-application";
-import { initialesDepuis } from "@/composants/coquille-app/initiales";
-import type { GroupeNav } from "@/composants/coquille-app/types";
+import { EntetePlanning, type OngletPlanning } from "./navigation";
 
 /** Un compte « client » (ni admin, ni team) — cf. `hub.UtilisateurHub.est_client` cote Django. */
 export function useRolePlanning() {
@@ -26,47 +21,42 @@ export function useRolePlanning() {
   return { estClient, peutEcrire, roles };
 }
 
+function initialesDepuis(nom: string) {
+  return nom
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((mot) => mot[0])
+    .join("")
+    .toUpperCase();
+}
+
 export function EspacePlanning({ children }: { children: React.ReactNode }) {
   const { profil, deconnecter } = useSession();
   const routeur = useRouter();
   const { estClient } = useRolePlanning();
 
-  const groupes: GroupeNav[] = estClient
+  const onglets: OngletPlanning[] = estClient
     ? []
     : [
-        {
-          cle: "navigation",
-          label: "Navigation",
-          couleur: "bg-primary",
-          items: [
-            { label: "Tableau de bord", href: "/planning", icon: LayoutDashboard },
-            { label: "Clients", href: "/planning/clients", icon: Users },
-            { label: "Idées de contenu", href: "/planning/idees-contenu", icon: Lightbulb },
-            { label: "Tournages", href: "/planning/tournages", icon: Video },
-            { label: "Publications", href: "/planning/publications", icon: Megaphone },
-          ],
-        },
+        { label: "Tableau de bord", href: "/planning", icon: LayoutDashboard },
+        { label: "Clients", href: "/planning/clients", icon: Users },
+        { label: "Idées de contenu", href: "/planning/idees-contenu", icon: Lightbulb },
+        { label: "Tournages", href: "/planning/tournages", icon: Video },
+        { label: "Publications", href: "/planning/publications", icon: Megaphone },
       ];
 
   const nomAffiche = profil?.utilisateur.nom_complet || profil?.utilisateur.identifiant || "—";
 
   return (
-    <EspaceApplication
-      nomApp="GDA Media Planning"
-      sousTitre="Gestion des plannings"
-      icone={Clapperboard}
-      groupes={groupes}
-      pied="Planification de contenu"
-      utilisateur={{
-        nomAffiche,
-        initiales: initialesDepuis(nomAffiche),
-        estAdmin: profil?.utilisateur.est_superadmin,
-        photoUrl: profil?.utilisateur.photo,
-      }}
-      onDeconnexion={() => deconnecter().then(() => routeur.replace("/connexion"))}
-      rechercheVisible={false}
-    >
-      {children}
-    </EspaceApplication>
+    <div className="min-h-screen bg-[#f4f1eb]">
+      <EntetePlanning
+        onglets={onglets}
+        nomAffiche={nomAffiche}
+        initiales={initialesDepuis(nomAffiche)}
+        onDeconnexion={() => deconnecter().then(() => routeur.replace("/connexion"))}
+      />
+      <main className="px-4 py-6 md:px-8">{children}</main>
+    </div>
   );
 }
